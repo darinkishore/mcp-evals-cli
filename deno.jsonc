@@ -1,0 +1,17 @@
+{
+  "tasks": {
+    "review": "deno run -A cli/deno/main.ts review",
+    "import": "deno run -A cli/deno/main.ts import",
+    "status": "deno run -A cli/deno/main.ts status",
+    "ask": "deno run -A cli/deno/main.ts ask"
+  },
+  "nodeModulesDir": true,
+  "compilerOptions": {
+    "jsx": "react-jsx",
+    "jsxImportSource": "react",
+    "strict": true,
+    "target": "ES2022",
+    "module": "ESNext"
+  }
+}
+
