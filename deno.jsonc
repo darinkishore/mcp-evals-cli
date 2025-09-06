@@ -2,16 +2,24 @@
   "tasks": {
     "review": "deno run -A cli/deno/main.ts review",
     "import": "deno run -A cli/deno/main.ts import",
+    "import-one": "deno run -A cli/deno/main.ts import-one",
     "status": "deno run -A cli/deno/main.ts status",
-    "ask": "deno run -A cli/deno/main.ts ask"
+    "ask": "deno run -A cli/deno/main.ts ask",
+    "config": "deno run -A cli/deno/main.ts config",
+    "dev": "deno run -A --watch main.ts",
+    "dev:review": "deno run -A --watch main.ts review",
+    "install:dev": "deno install -g -A --name evals-dev --config deno.jsonc main.ts",
+    "install": "deno install -g -A --name evals --config deno.jsonc main.ts"
   },
-  "nodeModulesDir": true,
+  "nodeModulesDir": "auto",
   "compilerOptions": {
     "jsx": "react-jsx",
     "jsxImportSource": "react",
-    "strict": true,
-    "target": "ES2022",
-    "module": "ESNext"
+    "strict": true
+  },
+  "imports": {
+    "@std/assert": "jsr:@std/assert@^1.0.14",
+    "@types/react": "npm:@types/react@^19.1.12",
+    "react": "npm:react@^18.3.1"
   }
 }
-
