@@ -2,7 +2,7 @@ import React, { useEffect, useMemo, useState } from "npm:react@18";
 import { Box, Text, useApp, useInput } from "npm:ink@5";
 import type { ReviewsNextResponse } from "../types.ts";
 import { getNextReview, postAsk, postFeedback, postSkip } from "../api.ts";
-import { Issues, Header, TraceExcerpt, AskAnswer, InputControls } from "./index.ts";
+import { Issues, Header, Requirements, TraceExcerpt, AskAnswer, InputControls } from "./index.ts";
 
 type Mode = "idle" | "ask" | "feedback";
 
@@ -110,6 +110,8 @@ export default function ReviewApp() {
   return (
     <Box flexDirection="column" gap={1}>
       <Header t={current} />
+
+      <Requirements requirements={current.requirements ?? []} />
 
       <Issues issues={current.issues ?? []} />
 

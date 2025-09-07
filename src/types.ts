@@ -40,11 +40,18 @@ export interface ReviewIssue {
   description: string;
 }
 
+export interface ReviewRequirement {
+  requirement_summary: string;
+  satisfied: boolean;
+  failure_summary: string | null;
+}
+
 export interface ReviewsNextResponse {
   trace_id: string;
   task: string;
   messages: string;
   correctness?: boolean | null;
+  requirements: ReviewRequirement[];
   issues: ReviewIssue[];
   position: number;
   total_pending: number;
