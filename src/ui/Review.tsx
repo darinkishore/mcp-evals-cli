@@ -1,61 +1,10 @@
 import React, { useEffect, useMemo, useState } from "npm:react@18";
 import { Box, Text, useApp, useInput } from "npm:ink@5";
-import TextInput from "npm:ink-text-input@6";
-import type { ReviewsNextResponse, ReviewIssue } from "../types.ts";
+import type { ReviewsNextResponse } from "../types.ts";
 import { getNextReview, postAsk, postFeedback, postSkip } from "../api.ts";
+import { Issues, Header, TraceExcerpt, AskAnswer, InputControls } from "./index.ts";
 
 type Mode = "idle" | "ask" | "feedback";
-
-function Severity({ level }: { level: string }) {
-  const style: Record<string, string> = {
-    CRITICAL: "red",
-    HIGH: "yellow",
-    MEDIUM: "white",
-    LOW: "gray",
-  };
-  const color = style[level] ?? "white";
-  return <Text color={color} bold>{level}</Text>;
-}
-
-function Issues({ issues }: { issues: ReviewIssue[] }) {
-  if (!issues?.length) {
-    return (
-      <Box flexDirection="column" borderStyle="round" borderColor="cyan" paddingX={1}>
-        <Text>🔧 Tool Issues</Text>
-        <Text color="gray">No tool issues recorded</Text>
-      </Box>
-    );
-  }
-  return (
-    <Box flexDirection="column" borderStyle="round" borderColor="cyan" paddingX={1}>
-      <Text>🔧 Tool Issues</Text>
-      {issues.map((i, idx) => (
-        <Box key={idx} gap={2}>
-          <Severity level={i.severity} />
-          <Text>{i.description}</Text>
-        </Box>
-      ))}
-    </Box>
-  );
-}
-
-function Header({ t }: { t: ReviewsNextResponse }) {
-  const correctness = t.correctness === true
-    ? <Text color="green">✓ correct</Text>
-    : t.correctness === false
-      ? <Text color="red">❌ incorrect</Text>
-      : <Text color="yellow">unknown</Text>;
-
-  return (
-    <Box flexDirection="column" borderStyle="bold" paddingX={1}>
-      <Text>
-        <Text bold>Trace</Text> {t.trace_id}  <Text italic>{correctness}</Text>
-      </Text>
-      <Text>Task: {t.task}</Text>
-      <Text>[{t.position}/{t.total_pending}] in queue</Text>
-    </Box>
-  );
-}
 
 export default function ReviewApp() {
   const { exit } = useApp();
@@ -164,43 +113,24 @@ export default function ReviewApp() {
 
       <Issues issues={current.issues ?? []} />
 
-      <Box flexDirection="column" borderStyle="round" borderColor="cyan" paddingX={1}>
-        <Text>📜 Trace Excerpt</Text>
-        {current.messages.split("\n").map((l: string, i: number) => (
-          <Text key={i}>{l}</Text>
-        ))}
-      </Box>
+      <TraceExcerpt messages={current.messages} />
 
       {askAnswer && (
-        <Box flexDirection="column" borderStyle="round" borderColor="magenta" paddingX={1}>
-          <Text>Ask</Text>
-          {askAnswer.split("\n").map((l: string, i: number) => <Text key={i}>{l}</Text>)}
-        </Box>
+        <AskAnswer askAnswer={askAnswer} />
       )}
 
       {notice && (
         <Text color="green">{notice}</Text>
       )}
 
-      {mode === "ask" && (
-        <Box>
-          <Text>Ask: </Text>
-          <TextInput value={input} onChange={setInput} onSubmit={onSubmitAsk} />
-        </Box>
-      )}
-
-      {mode === "feedback" && (
-        <Box>
-          <Text>Feedback: </Text>
-          <TextInput value={input} onChange={setInput} onSubmit={onSubmitFeedback} />
-        </Box>
-      )}
-
-      {mode === "idle" && (
-        <Box>
-          {controls}
-        </Box>
-      )}
+      <InputControls 
+        mode={mode}
+        input={input}
+        setInput={setInput}
+        onSubmitAsk={onSubmitAsk}
+        onSubmitFeedback={onSubmitFeedback}
+        controls={controls}
+      />
     </Box>
   );
 }
