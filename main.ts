@@ -18,7 +18,7 @@ Usage:
   evals config [view|set <key> <value>|unset <key>|edit|path]
 
 Env:
-  EVAL_API_URL (default http://127.0.0.1:8000)
+  EVAL_API_URL (default http://127.0.0.1:8001)
   LANGSMITH_API_KEY, LANGSMITH_PROJECT_ID
 `);
 }
@@ -168,6 +168,7 @@ async function cmdConfig(args: string[]) {
 
 async function main() {
   const [cmd, ...rest] = Deno.args;
+  const DEBUG = (Deno.env.get("EVALS_DEBUG") ?? "").toLowerCase() === "1";
   try {
     switch (cmd) {
       case "import":
@@ -183,15 +184,82 @@ async function main() {
         await cmdAsk(rest);
         break;
       case "review":
-      case "-r":
+      case "-r": {
+        // Ensure consistent dev/prod selection for React/Reconciler
+        const procEnv = (globalThis as any)?.process?.env;
+        try {
+          if (procEnv && !("NODE_ENV" in procEnv)) procEnv.NODE_ENV = "development";
+        } catch {}
+
         // Lazy-load Ink and React only when needed to avoid TTY rawMode issues
-        const [{ default: React }, { render }, { default: ReviewApp }] = await Promise.all([
-          import("npm:react@18"),
-          import("npm:ink@5"),
-          import("./src/ui/Review.tsx"),
+        const [{ default: React }, { render }, { default: FullScreenApp }] = await Promise.all([
+          import("npm:react@19"),
+          import("npm:ink@6"),
+          import("./src/ui/FullScreenApp.tsx"),
         ]);
-        render(React.createElement(ReviewApp));
+
+        // Guard against mismatched React version (Ink v6 needs React 19)
+        // react-reconciler@0.32 expects __CLIENT_INTERNALS_DO_NOT_USE_OR_WARN_USERS_THEY_CANNOT_UPGRADE
+        if (!(React as any)?.__CLIENT_INTERNALS_DO_NOT_USE_OR_WARN_USERS_THEY_CANNOT_UPGRADE) {
+          throw new Error(
+            "React 19 not resolved at runtime (missing __CLIENT_INTERNALS...). " +
+              "Try: deno cache --reload cli/deno/main.ts, then reinstall with deno install -f -A --config cli/deno/deno.jsonc -n evals cli/deno/main.ts."
+          );
+        }
+
+        const proc: any = (globalThis as any).process;
+        const write = (s: string) => {
+          try {
+            if (proc?.stdout?.isTTY && proc?.stdout?.write) proc.stdout.write(s);
+          } catch {
+            // ignore
+          }
+        };
+        const enterAlt = () => write("\x1b[?1049h");
+        const leaveAlt = () => write("\x1b[?1049l");
+
+        let cleaned = false;
+        const cleanup = () => {
+          if (cleaned) return;
+          cleaned = true;
+          leaveAlt();
+        };
+
+        // Install signal handlers for robust restore
+        const denoHasSignals = typeof (Deno as any)?.addSignalListener === "function";
+        const denoAdd = (sig: string, fn: () => void) => {
+          try { (Deno as any).addSignalListener?.(sig, fn); } catch {}
+        };
+        const denoRemove = (sig: string, fn: () => void) => {
+          try { (Deno as any).removeSignalListener?.(sig, fn); } catch {}
+        };
+        const nodeOn = (ev: string, fn: () => void) => { try { proc?.on?.(ev, fn); } catch {} };
+        const nodeOff = (ev: string, fn: () => void) => { try { proc?.off?.(ev, fn); } catch {} };
+
+        const onSigInt = () => cleanup();
+        const onSigTerm = () => cleanup();
+        if (denoHasSignals) {
+          denoAdd("SIGINT", onSigInt);
+          denoAdd("SIGTERM", onSigTerm);
+        }
+        nodeOn("SIGINT", onSigInt);
+        nodeOn("SIGTERM", onSigTerm);
+
+        enterAlt();
+        const ink = render(React.createElement(FullScreenApp));
+        try {
+          await (ink as any).waitUntilExit?.();
+        } finally {
+          cleanup();
+          if (denoHasSignals) {
+            denoRemove("SIGINT", onSigInt);
+            denoRemove("SIGTERM", onSigTerm);
+          }
+          nodeOff("SIGINT", onSigInt);
+          nodeOff("SIGTERM", onSigTerm);
+        }
         break;
+      }
       case "config":
         await cmdConfig(rest);
         break;
@@ -199,7 +267,12 @@ async function main() {
         usage();
     }
   } catch (e) {
-    console.error(chalk.red("Error:"), (e as any).message ?? String(e));
+    const err = e as any;
+    console.error(chalk.red("Error:"), err?.message ?? String(err));
+    if (DEBUG) {
+      console.error("Stack:");
+      console.error(err?.stack ?? "<no stack>");
+    }
     Deno.exit(1);
   }
 }

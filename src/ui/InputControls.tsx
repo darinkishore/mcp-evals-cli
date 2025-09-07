@@ -1,5 +1,5 @@
-import { Box, Text } from "npm:ink@5";
-import type React from "npm:react@18";
+import { Box, Text } from "npm:ink@6";
+import React from "npm:react@19";
 import TextInput from "npm:ink-text-input@6";
 
 type Mode = "idle" | "ask" | "feedback";

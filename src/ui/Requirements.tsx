@@ -1,5 +1,7 @@
-import { Box, Text } from "npm:ink@5";
+import React from "npm:react@19";
+import { Box, Text } from "npm:ink@6";
 import type { ReviewRequirement } from "../types.ts";
+import { icons } from "./theme.ts";
 
 interface RequirementsProps {
   requirements: ReviewRequirement[];
@@ -14,9 +16,9 @@ export default function Requirements({ requirements }: RequirementsProps) {
   const total = requirements.length;
   
   // Create visual progress bar with colored dots
-  const progressDots = requirements.map((req, i) => (
-    <Text key={i} color={req.satisfied ? "green" : "red"}>
-      {req.satisfied ? "●" : "○"}
+  const progressDots = requirements.map((req) => (
+    <Text color={req.satisfied ? "green" : "red"}>
+      {req.satisfied ? icons.reqOk : icons.reqBad}
     </Text>
   ));
 
@@ -28,10 +30,10 @@ export default function Requirements({ requirements }: RequirementsProps) {
         ] {satisfied}/{total} satisfied
       </Text>
       
-      {requirements.map((req, i) => (
-        <Text key={i}>
+      {requirements.map((req) => (
+        <Text>
           <Text color={req.satisfied ? "green" : "red"}>
-            {req.satisfied ? "●" : "○"}
+            {req.satisfied ? icons.reqOk : icons.reqBad}
           </Text>
           {" "}
           <Text bold color={req.satisfied ? "green" : "red"}>

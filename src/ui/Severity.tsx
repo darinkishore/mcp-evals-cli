@@ -1,4 +1,5 @@
-import { Text } from "npm:ink@5";
+import React from "npm:react@19";
+import { Text } from "npm:ink@6";
 
 interface SeverityProps {
   level: string;

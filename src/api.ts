@@ -12,7 +12,7 @@ async function getBaseUrl(): Promise<string> {
   if (cachedBaseUrl) return cachedBaseUrl;
   const envUrl = Deno.env.get("EVAL_API_URL");
   const cfg = await readConfig();
-  const url = envUrl || cfg.evalApiUrl || "http://127.0.0.1:8000";
+  const url = envUrl || cfg.evalApiUrl || "http://127.0.0.1:8001";
   cachedBaseUrl = url.replace(/\/$/, "");
   return cachedBaseUrl;
 }

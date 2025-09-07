@@ -1,5 +1,7 @@
-import { Box, Text } from "npm:ink@5";
+import React from "npm:react@19";
+import { Box, Text } from "npm:ink@6";
 import type { ReviewsNextResponse } from "../types.ts";
+import { icons } from "./theme.ts";
 
 interface HeaderProps {
   t: ReviewsNextResponse;
@@ -7,10 +9,10 @@ interface HeaderProps {
 
 export default function Header({ t }: HeaderProps) {
   const correctness = t.correctness === true
-    ? <Text color="green">✓ correct</Text>
+    ? <Text color="green">{icons.correct} correct</Text>
     : t.correctness === false
-      ? <Text color="red">❌ incorrect</Text>
-      : <Text color="yellow">unknown</Text>;
+      ? <Text color="red">{icons.incorrect} incorrect</Text>
+      : <Text color="yellow">{icons.unknown} unknown</Text>;
 
   return (
     <Box flexDirection="column" borderStyle="bold" paddingX={1}>

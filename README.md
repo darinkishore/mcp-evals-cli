@@ -33,7 +33,7 @@ Run
   evals -r
 
 Permissions
-- Network: backend API (EVAL_API_URL, default http://127.0.0.1:8000)
+- Network: backend API (EVAL_API_URL, default http://127.0.0.1:8001)
 - Env: reads LANGSMITH_API_KEY, LANGSMITH_PROJECT_ID, EVAL_API_URL
 - FS: optional config at ~/.eval/config.json
 
@@ -42,7 +42,7 @@ Config
   ~/.eval/config.json
   Manage via:
   - evals config view
-  - evals config set evalApiUrl http://127.0.0.1:8000
+  - evals config set evalApiUrl http://127.0.0.1:8001
   - evals config set langsmithApiKey sk-...
   - evals config set langsmithProjectId <id>
   - evals config set langsmithProjectName <name>

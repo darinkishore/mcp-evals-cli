@@ -1,0 +1,8 @@
+{
+  "name": "evals-deno",
+  "private": true,
+  "type": "module",
+  "dependencies": {
+    "react": "^19.1.1"
+  }
+}

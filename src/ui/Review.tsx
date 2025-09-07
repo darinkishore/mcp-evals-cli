@@ -1,21 +1,29 @@
-import React, { useEffect, useMemo, useState } from "npm:react@18";
-import { Box, Text, useApp, useInput } from "npm:ink@5";
+import React, { useEffect, useMemo, useState } from "npm:react@19";
+import { Box, Text, useApp, useInput } from "npm:ink@6";
 import type { ReviewsNextResponse } from "../types.ts";
 import { getNextReview, postAsk, postFeedback, postSkip } from "../api.ts";
 import { Issues, Header, Requirements, TraceExcerpt, AskAnswer, InputControls } from "./index.ts";
+import { icons } from "./theme.ts";
 
 type Mode = "idle" | "ask" | "feedback";
 
-export default function ReviewApp() {
+interface ReviewProps {
+  rows?: number;
+  cols?: number;
+}
+
+export default function ReviewApp({ rows, cols }: ReviewProps) {
   const { exit } = useApp();
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [current, setCurrent] = useState<ReviewsNextResponse | null>(null);
   const [mode, setMode] = useState<Mode>("idle");
-  const [input, setInput] = useState("");
   const [askAnswer, setAskAnswer] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
   const [refresh, setRefresh] = useState(0);
+  const [focus, setFocus] = useState<"left" | "right">("left");
+  const [rightOffset, setRightOffset] = useState<number>(0);
+  const [input, setInput] = useState("");
 
   useEffect(() => {
     let cancelled = false;
@@ -23,6 +31,7 @@ export default function ReviewApp() {
     setError(null);
     setAskAnswer(null);
     setNotice(null);
+    setRightOffset(0);
     getNextReview()
       .then((n) => {
         if (cancelled) return;
@@ -63,6 +72,19 @@ export default function ReviewApp() {
     } else if (ch === "f") {
       setMode("feedback");
       setInput("");
+    } else if (ch === "h") {
+      setFocus("left");
+    } else if (ch === "l") {
+      setFocus("right");
+    } else if (ch === "j") {
+      // Scroll down in focused pane (right pane scroll implemented)
+      if (focus === "right") {
+        setRightOffset((o: number) => o + 1);
+      }
+    } else if (ch === "k") {
+      if (focus === "right") {
+        setRightOffset((o: number) => Math.max(0, o - 1));
+      }
     }
   });
 
@@ -107,16 +129,34 @@ export default function ReviewApp() {
   if (error) return <Text color="red">{error}</Text>;
   if (!current) return <Text color="green">✓ All traces reviewed!</Text>;
 
+  // Approximate visible height for the right pane to enable scrolling
+  const totalRows = rows ?? 24;
+  const reservedBottom = 6; // space for ask/notice/controls
+  const headerRows = 5;     // approx: boxed header with 3 lines + borders
+  const verticalGaps = 2;   // gaps between sections
+  const paneHeight = Math.max(4, totalRows - reservedBottom - headerRows - verticalGaps);
+
   return (
     <Box flexDirection="column" gap={1}>
+      {/* Top: full-width header */}
       <Header t={current} />
 
-      <Requirements requirements={current.requirements ?? []} />
+      {/* Bottom: two boxes at the same height filling remaining space */}
+      <Box flexDirection="row" gap={2} flexGrow={1}>
+        {/* Left bottom box: Review Details */}
+        <Box flexDirection="column" borderStyle="round" borderColor="cyan" paddingX={1} flexGrow={3} height={paneHeight}>
+          <Text>{`${focus === "left" ? "» " : "  "}${icons.details}`}</Text>
+          <Requirements requirements={current.requirements ?? []} />
+          <Issues issues={current.issues ?? []} boxed={false} />
+        </Box>
 
-      <Issues issues={current.issues ?? []} />
+        {/* Right bottom box: Trace */}
+        <Box flexDirection="column" flexGrow={2}>
+          <TraceExcerpt messages={current.messages} height={paneHeight} offset={rightOffset} focused={focus === "right"} />
+        </Box>
+      </Box>
 
-      <TraceExcerpt messages={current.messages} />
-
+      {/* Footer: ask/answer, notices, and controls */}
       {askAnswer && (
         <AskAnswer askAnswer={askAnswer} />
       )}
@@ -136,4 +176,3 @@ export default function ReviewApp() {
     </Box>
   );
 }
-
