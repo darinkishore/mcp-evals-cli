@@ -18,7 +18,7 @@ import {
   openConfigInEditor,
 } from "./src/config.ts";
 
-const VERSION = "0.1.0";
+const VERSION = "v0.1.0";
 
 async function runReview() {
   // Ensure consistent dev/prod selection for React/Reconciler
@@ -112,33 +112,7 @@ const cmd = new Command()
   .name("evals")
   .version(VERSION)
   .description("Evals CLI (Deno + Ink)")
-  // Override built-in help/version to avoid auto upgrade checks on --help/--version
-  .helpOption(false)
-  .versionOption(false)
-  .option(
-    "-V, --version",
-    "Show the version number for this program.",
-    {
-      standalone: true,
-      prepend: true,
-      action: function () {
-        const long = this.getRawArgs().includes("--version");
-        if (long) this.showLongVersion();
-        else this.showVersion();
-        this.exit();
-      },
-    },
-  )
-  .option("-h, --help", "Show this help.", {
-    standalone: true,
-    global: true,
-    prepend: true,
-    action: function () {
-      const long = this.getRawArgs().includes("--help");
-      this.showHelp({ long });
-      this.exit();
-    },
-  })
+  // Use Cliffy's default help/version so it can show upgrade hints
   .globalOption("-r, --review", "Open the trace viewer (read-only)")
   .action(async (options) => {
     if (options.review) {
@@ -319,28 +293,15 @@ const cmd = new Command()
   )
   .command("completions", new CompletionsCommand())
   .reset()
-  // TODO: Switch this placeholder to real UpgradeCommand once the public
-  // CLI repo exists and has tags/releases (see CLAUDE.md "Subtree sync for Deno CLI").
-  // Example (to enable later):
-  // .command(
-  //   "upgrade",
-  //   new UpgradeCommand({
-  //     name: "evals",
-  //     main: "cli/deno/main.ts",
-  //     args: ["-A", "--config", "cli/deno/deno.jsonc"],
-  //     provider: new GithubProvider({ repository: "<public-user>/<public-repo>" }),
-  //   }),
-  // )
-  .command("upgrade")
-  .description("Upgrade is temporarily disabled until public repo/tags are live")
-  .action(() => {
-    console.log(
-      "Upgrade is not yet available. TODO: enable after public repo + tags.",
-    );
-    console.log(
-      "See CLAUDE.md for subtree setup and wire GithubProvider(repository).",
-    );
-  });
+  .command(
+    "upgrade",
+    new UpgradeCommand({
+      name: "evals",
+      main: "main.ts",
+      args: ["-A", "--config", "deno.jsonc"],
+      provider: new GithubProvider({ repository: "darinkishore/mcp-evals-cli" }),
+    }),
+  );
 
 if (import.meta.main) {
   const DEBUG = (Deno.env.get("EVALS_DEBUG") ?? "").toLowerCase() === "1";
