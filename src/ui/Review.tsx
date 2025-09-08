@@ -2,14 +2,7 @@ import { useEffect, useMemo, useState } from "npm:react@19";
 import { Box, Text, useApp, useInput } from "npm:ink@6";
 import type { TraceBrowseItem } from "../types.ts";
 import { listTraces, postAsk, postFeedback } from "../api.ts";
-import {
-  AskAnswer,
-  Header,
-  InputControls,
-  Issues,
-  Requirements,
-  TraceExcerpt,
-} from "./index.ts";
+import { Issues, Header, Requirements, TraceExcerpt, AskAnswer, InputControls } from "./index.ts";
 import { icons } from "./theme.ts";
 
 type Mode = "idle" | "ask" | "feedback";
@@ -25,9 +18,7 @@ export default function ReviewApp({ rows, cols: _cols }: ReviewProps) {
   const [error, setError] = useState<string | null>(null);
   const [items, setItems] = useState<TraceBrowseItem[]>([]);
   const [index, setIndex] = useState(0);
-  const current: TraceBrowseItem | null = items.length
-    ? items[Math.max(0, Math.min(index, items.length - 1))]
-    : null;
+  const current: TraceBrowseItem | null = items.length ? items[Math.max(0, Math.min(index, items.length - 1))] : null;
   const [mode, setMode] = useState<Mode>("idle");
   const [askAnswer, setAskAnswer] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
@@ -58,9 +49,7 @@ export default function ReviewApp({ rows, cols: _cols }: ReviewProps) {
       }
     }
     loadInitial();
-    return () => {
-      cancelled = true;
-    };
+    return () => { cancelled = true; };
   }, []);
 
   useInput(async (inp, key) => {
@@ -87,7 +76,6 @@ export default function ReviewApp({ rows, cols: _cols }: ReviewProps) {
         return;
       }
       try {
-        setError(null);
         setLoading(true);
         const res = await listTraces(offset, pageSize);
         const newItems = [...items, ...(res.items as TraceBrowseItem[])];
@@ -146,7 +134,7 @@ export default function ReviewApp({ rows, cols: _cols }: ReviewProps) {
 
   const controls = useMemo(() => (
     <Text>
-      [H] prev [L] next [f]eedback [a]sk [q]uit
+      [H] prev  [L] next   [f]eedback  [a]sk  [q]uit
     </Text>
   ), []);
 
