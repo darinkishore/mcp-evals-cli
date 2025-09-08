@@ -46,14 +46,20 @@ export interface ReviewRequirement {
   failure_summary: string | null;
 }
 
-export interface ReviewsNextResponse {
+export interface TraceBrowseItem {
   trace_id: string;
   task: string;
   messages: string;
   correctness?: boolean | null;
   requirements: ReviewRequirement[];
   issues: ReviewIssue[];
-  position: number;
-  total_pending: number;
+  position: number;        // 1-based index in the full list
+  total_pending: number;   // reuse field name for header display (overall total)
 }
 
+export interface TraceBrowseResponse {
+  items: TraceBrowseItem[];
+  offset: number;
+  limit: number;
+  total: number;
+}
