@@ -319,28 +319,15 @@ const cmd = new Command()
   )
   .command("completions", new CompletionsCommand())
   .reset()
-  // TODO: Switch this placeholder to real UpgradeCommand once the public
-  // CLI repo exists and has tags/releases (see CLAUDE.md "Subtree sync for Deno CLI").
-  // Example (to enable later):
-  // .command(
-  //   "upgrade",
-  //   new UpgradeCommand({
-  //     name: "evals",
-  //     main: "cli/deno/main.ts",
-  //     args: ["-A", "--config", "cli/deno/deno.jsonc"],
-  //     provider: new GithubProvider({ repository: "<public-user>/<public-repo>" }),
-  //   }),
-  // )
-  .command("upgrade")
-  .description("Upgrade is temporarily disabled until public repo/tags are live")
-  .action(() => {
-    console.log(
-      "Upgrade is not yet available. TODO: enable after public repo + tags.",
-    );
-    console.log(
-      "See CLAUDE.md for subtree setup and wire GithubProvider(repository).",
-    );
-  });
+  .command(
+    "upgrade",
+    new UpgradeCommand({
+      name: "evals",
+      main: "main.ts",
+      args: ["-A", "--config", "deno.jsonc"],
+      provider: new GithubProvider({ repository: "darinkishore/mcp-evals-cli" }),
+    }),
+  );
 
 if (import.meta.main) {
   const DEBUG = (Deno.env.get("EVALS_DEBUG") ?? "").toLowerCase() === "1";

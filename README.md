@@ -13,12 +13,15 @@ Commands
 - review: Interactive TUI viewer for traces (read-only navigation).
 - config: View/edit persistent config (API URL, LangSmith keys).
 - completions: Generate shell completions (bash, zsh, fish).
-- upgrade: (temporarily disabled) Self-upgrade from GitHub releases.
+- upgrade: Self-upgrade from GitHub (after first tag).
 
 Install
 1) Ensure Deno v2+ is installed.
-2) From repo root:
-   deno install -A -n evals cli/deno/main.ts
+2) Public (stable) install from tag:
+   deno install -g -A -n evals https://raw.githubusercontent.com/darinkishore/mcp-evals-cli/v0.1.0/main.ts
+   # Replace v0.1.0 with the latest release tag
+3) Monorepo (dev) install from this repo:
+   deno install -g -A -n evals cli/deno/main.ts
 
 Run
 - Import batch:
@@ -40,11 +43,12 @@ Shell Completions
 - Zsh:  source <(evals completions zsh)
   # or write to fpath: evals completions zsh > /path/to/zsh/site-functions/_evals
 
-Upgrade (disabled for now)
-- TODO: Once the public CLI repo exists and has tags/releases, wire
-  GithubProvider(repository: "<public-user>/<public-repo>") in cli/deno/main.ts
-  and re-enable the UpgradeCommand. For now:
-  - evals upgrade  # prints a placeholder message
+Upgrade
+- After the first tagged release (e.g., v0.1.0):
+  - Latest: evals upgrade
+  - List versions: evals upgrade -l
+  - Specific: evals upgrade --version v0.1.0
+  Note: evals upgrade requires at least one Git tag in the public repo.
 
 Permissions
 - Network: backend API (EVAL_API_URL, default http://127.0.0.1:8001)
