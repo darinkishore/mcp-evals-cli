@@ -9,6 +9,7 @@ import { GithubProvider } from "jsr:@cliffy/command@1.0.0-rc.7/upgrade/provider/
 
 import { getStatus, importBatch, importOne, postAsk } from "./src/api.ts";
 import {
+  type EvalConfig,
   getConfigPath,
   mask,
   openConfigInEditor,
@@ -25,7 +26,7 @@ async function runReview() {
   const procEnv = (globalThis as any)?.process?.env;
   try {
     if (procEnv && !("NODE_ENV" in procEnv)) procEnv.NODE_ENV = "development";
-  } catch {}
+  } catch { /* ignore */ }
 
   // Lazy-load Ink and React only when needed to avoid TTY rawMode issues
   const [{ default: React }, { render }, { default: FullScreenApp }] =
@@ -70,22 +71,22 @@ async function runReview() {
   const denoAdd = (sig: string, fn: () => void) => {
     try {
       (Deno as any).addSignalListener?.(sig, fn);
-    } catch {}
+    } catch { /* ignore */ }
   };
   const denoRemove = (sig: string, fn: () => void) => {
     try {
       (Deno as any).removeSignalListener?.(sig, fn);
-    } catch {}
+    } catch { /* ignore */ }
   };
   const nodeOn = (ev: string, fn: () => void) => {
     try {
       proc?.on?.(ev, fn);
-    } catch {}
+    } catch { /* ignore */ }
   };
   const nodeOff = (ev: string, fn: () => void) => {
     try {
       proc?.off?.(ev, fn);
-    } catch {}
+    } catch { /* ignore */ }
   };
 
   const onSigInt = () => cleanup();
@@ -124,8 +125,9 @@ const cmd = new Command()
     } else {
       await cmd.showHelp();
     }
-  })
-  // import
+  });
+
+cmd
   .command("import")
   .description("Import a batch of traces from LangSmith")
   .option("--api-key <key:string>", "LangSmith API key")
@@ -164,9 +166,9 @@ const cmd = new Command()
       }
     }
     console.log(`\nOpen viewer: ${chalk.cyan("evals review")}`);
-  })
-  .reset()
-  // import-one
+  });
+
+cmd
   .command("import-one <traceId:string>")
   .description("Import a single trace by id")
   .option("--api-key <key:string>", "LangSmith API key")
@@ -185,9 +187,9 @@ const cmd = new Command()
       ? "updated"
       : "unchanged";
     console.log(chalk.bold(`Trace ${res.trace.traceId} ${status}.`));
-  })
-  .reset()
-  // status
+  });
+
+cmd
   .command("status <traceId:string>")
   .description("Show analysis/review readiness for a trace")
   .action(async (_options, traceId: string) => {
@@ -207,9 +209,9 @@ const cmd = new Command()
       s.ready_for_review ? chalk.green("yes") : chalk.yellow("no"),
     );
     if (s.created_at) console.log(chalk.bold("Created:"), s.created_at);
-  })
-  .reset()
-  // ask
+  });
+
+cmd
   .command("ask <traceId:string> <question...:string>")
   .description("Ask a question about a stored trace")
   .action(async (_options, traceId: string, ...qparts: string[]) => {
@@ -217,101 +219,107 @@ const cmd = new Command()
     const r = await postAsk(traceId, question);
     console.log(chalk.cyan("Ask:"));
     console.log(r.answer);
-  })
-  .reset()
-  // review
+  });
+
+cmd
   .command("review")
   .description("Interactive trace viewer (read-only navigation)")
   .action(async () => {
     await runReview();
-  })
-  .reset()
-  // config group
-  .command(
-    "config",
-    new Command()
-      .description("View and edit persistent config")
-      .command("view")
-      .description("Print config path and current values")
-      .action(async () => {
-        const cfg = await readConfig();
-        console.log(chalk.bold("Config path:"), getConfigPath());
-        console.log(
-          JSON.stringify(
-            { ...cfg, langsmithApiKey: mask(cfg.langsmithApiKey) },
-            null,
-            2,
-          ),
-        );
-      })
-      .command("set <key:string> <value...:string>")
-      .description("Set a config key to a value")
-      .action(async (_options, key: string, ...vparts: string[]) => {
-        const allowed = [
-          "langsmithApiKey",
-          "langsmithProjectId",
-          "langsmithProjectName",
-          "evalApiUrl",
-        ];
-        if (!allowed.includes(key)) {
-          console.log(
-            "Allowed keys: langsmithApiKey, langsmithProjectId, langsmithProjectName, evalApiUrl",
-          );
-          return;
-        }
-        const value = vparts.join(" ");
-        // deno-lint-ignore no-explicit-any
-        await setConfigKey(key as any, value);
-        console.log("Updated", key);
-      })
-      .command("unset <key:string>")
-      .description("Unset a config key")
-      .action(async (_options, key: string) => {
-        const allowed = [
-          "langsmithApiKey",
-          "langsmithProjectId",
-          "langsmithProjectName",
-          "evalApiUrl",
-        ];
-        if (!allowed.includes(key)) {
-          console.log(
-            "Allowed keys: langsmithApiKey, langsmithProjectId, langsmithProjectName, evalApiUrl",
-          );
-          return;
-        }
-        // deno-lint-ignore no-explicit-any
-        await unsetConfigKey(key as any);
-        console.log("Removed", key);
-      })
-      .command("edit")
-      .description("Open the config file in $EDITOR")
-      .action(async () => {
-        try {
-          await openConfigInEditor();
-        } catch (e) {
-          console.error("Failed to open editor:", (e as Error).message);
-          console.log("Edit manually:", getConfigPath());
-        }
-      })
-      .command("path")
-      .description("Print the config file path")
-      .action(() => {
-        console.log(getConfigPath());
-      })
-      .reset(),
-  )
-  .command("completions", new CompletionsCommand())
-  .reset()
-  .command(
-    "upgrade",
-    new UpgradeCommand({
-      main: "main.ts",
-      args: ["-A", "--config", "deno.jsonc"],
-      provider: new GithubProvider({
-        repository: "darinkishore/mcp-evals-cli",
-      }),
+  });
+
+const configCmd = new Command()
+  .description("View and edit persistent config");
+
+configCmd
+  .command("view")
+  .description("Print config path and current values")
+  .action(async () => {
+    const cfg = await readConfig();
+    console.log(chalk.bold("Config path:"), getConfigPath());
+    console.log(
+      JSON.stringify(
+        { ...cfg, langsmithApiKey: mask(cfg.langsmithApiKey) },
+        null,
+        2,
+      ),
+    );
+  });
+
+configCmd
+  .command("set <key:string> <value...:string>")
+  .description("Set a config key to a value")
+  .action(async (_options, key: string, ...vparts: string[]) => {
+    const allowed = [
+      "langsmithApiKey",
+      "langsmithProjectId",
+      "langsmithProjectName",
+      "evalApiUrl",
+    ];
+    if (!allowed.includes(key)) {
+      console.log(
+        "Allowed keys: langsmithApiKey, langsmithProjectId, langsmithProjectName, evalApiUrl",
+      );
+      return;
+    }
+    const value = vparts.join(" ");
+    await setConfigKey(key as keyof EvalConfig, value);
+    console.log("Updated", key);
+  });
+
+configCmd
+  .command("unset <key:string>")
+  .description("Unset a config key")
+  .action(async (_options, key: string) => {
+    const allowed = [
+      "langsmithApiKey",
+      "langsmithProjectId",
+      "langsmithProjectName",
+      "evalApiUrl",
+    ];
+    if (!allowed.includes(key)) {
+      console.log(
+        "Allowed keys: langsmithApiKey, langsmithProjectId, langsmithProjectName, evalApiUrl",
+      );
+      return;
+    }
+    await unsetConfigKey(key as keyof EvalConfig);
+    console.log("Removed", key);
+  });
+
+configCmd
+  .command("edit")
+  .description("Open the config file in $EDITOR")
+  .action(async () => {
+    try {
+      await openConfigInEditor();
+    } catch (e) {
+      console.error("Failed to open editor:", (e as Error).message);
+      console.log("Edit manually:", getConfigPath());
+    }
+  });
+
+configCmd
+  .command("path")
+  .description("Print the config file path")
+  .action(() => {
+    console.log(getConfigPath());
+  });
+
+cmd.command("config", configCmd);
+
+cmd.command("completions", new CompletionsCommand());
+
+cmd.command(
+  "upgrade",
+  new UpgradeCommand({
+    main: "main.ts",
+    args: ["-A", "--config", "deno.jsonc"],
+    provider: new GithubProvider({
+      repository: "darinkishore/mcp-evals-cli",
     }),
-  );
+  }),
+);
 
 if (import.meta.main) {
   const DEBUG = (Deno.env.get("EVALS_DEBUG") ?? "").toLowerCase() === "1";

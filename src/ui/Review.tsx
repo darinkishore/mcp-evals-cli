@@ -1,8 +1,15 @@
-import React, { useEffect, useMemo, useState } from "npm:react@19";
+import { useEffect, useMemo, useState } from "npm:react@19";
 import { Box, Text, useApp, useInput } from "npm:ink@6";
 import type { TraceBrowseItem } from "../types.ts";
 import { listTraces, postAsk, postFeedback } from "../api.ts";
-import { Issues, Header, Requirements, TraceExcerpt, AskAnswer, InputControls } from "./index.ts";
+import {
+  AskAnswer,
+  Header,
+  InputControls,
+  Issues,
+  Requirements,
+  TraceExcerpt,
+} from "./index.ts";
 import { icons } from "./theme.ts";
 
 type Mode = "idle" | "ask" | "feedback";
@@ -12,13 +19,15 @@ interface ReviewProps {
   cols?: number;
 }
 
-export default function ReviewApp({ rows, cols }: ReviewProps) {
+export default function ReviewApp({ rows, cols: _cols }: ReviewProps) {
   const { exit } = useApp();
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [items, setItems] = useState<TraceBrowseItem[]>([]);
   const [index, setIndex] = useState(0);
-  const current: TraceBrowseItem | null = items.length ? items[Math.max(0, Math.min(index, items.length - 1))] : null;
+  const current: TraceBrowseItem | null = items.length
+    ? items[Math.max(0, Math.min(index, items.length - 1))]
+    : null;
   const [mode, setMode] = useState<Mode>("idle");
   const [askAnswer, setAskAnswer] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
@@ -49,7 +58,9 @@ export default function ReviewApp({ rows, cols }: ReviewProps) {
       }
     }
     loadInitial();
-    return () => { cancelled = true; };
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
   useInput(async (inp, key) => {
@@ -76,6 +87,7 @@ export default function ReviewApp({ rows, cols }: ReviewProps) {
         return;
       }
       try {
+        setError(null);
         setLoading(true);
         const res = await listTraces(offset, pageSize);
         const newItems = [...items, ...(res.items as TraceBrowseItem[])];
@@ -134,7 +146,7 @@ export default function ReviewApp({ rows, cols }: ReviewProps) {
 
   const controls = useMemo(() => (
     <Text>
-      [H] prev  [L] next   [f]eedback  [a]sk  [q]uit
+      [H] prev [L] next [f]eedback [a]sk [q]uit
     </Text>
   ), []);
 
@@ -145,9 +157,12 @@ export default function ReviewApp({ rows, cols }: ReviewProps) {
   // Approximate visible height for the content panes
   const totalRows = rows ?? 24;
   const reservedBottom = 6; // space for ask/notice/controls
-  const headerRows = 5;     // approx: boxed header with 3 lines + borders
-  const verticalGaps = 2;   // gaps between sections
-  const paneHeight = Math.max(4, totalRows - reservedBottom - headerRows - verticalGaps);
+  const headerRows = 5; // approx: boxed header with 3 lines + borders
+  const verticalGaps = 2; // gaps between sections
+  const paneHeight = Math.max(
+    4,
+    totalRows - reservedBottom - headerRows - verticalGaps,
+  );
 
   return (
     <Box flexDirection="column" height={totalRows} justifyContent="center">
@@ -155,31 +170,34 @@ export default function ReviewApp({ rows, cols }: ReviewProps) {
         {/* Top: full-width header */}
         <Header t={current} />
 
-      {/* Bottom: two boxes at the same height filling remaining space */}
-      <Box flexDirection="row" gap={2} flexGrow={1}>
-        {/* Left bottom box: Review Details */}
-        <Box flexDirection="column" borderStyle="round" borderColor="cyan" paddingX={1} flexGrow={3} height={paneHeight}>
-          <Text>{icons.details}</Text>
-          <Requirements requirements={current.requirements ?? []} />
-          <Issues issues={current.issues ?? []} boxed={false} />
-        </Box>
+        {/* Bottom: two boxes at the same height filling remaining space */}
+        <Box flexDirection="row" gap={2} flexGrow={1}>
+          {/* Left bottom box: Review Details */}
+          <Box
+            flexDirection="column"
+            borderStyle="round"
+            borderColor="cyan"
+            paddingX={1}
+            flexGrow={3}
+            height={paneHeight}
+          >
+            <Text>{icons.details}</Text>
+            <Requirements requirements={current.requirements ?? []} />
+            <Issues issues={current.issues ?? []} boxed={false} />
+          </Box>
 
-        {/* Right bottom box: Trace */}
-        <Box flexDirection="column" flexGrow={2}>
-          <TraceExcerpt messages={current.messages} height={paneHeight} />
+          {/* Right bottom box: Trace */}
+          <Box flexDirection="column" flexGrow={2}>
+            <TraceExcerpt messages={current.messages} height={paneHeight} />
+          </Box>
         </Box>
-      </Box>
 
         {/* Footer: ask/answer, notices, and controls */}
-        {askAnswer && (
-          <AskAnswer askAnswer={askAnswer} />
-        )}
+        {askAnswer && <AskAnswer askAnswer={askAnswer} />}
 
-        {notice && (
-          <Text color="green">{notice}</Text>
-        )}
+        {notice && <Text color="green">{notice}</Text>}
 
-        <InputControls 
+        <InputControls
           mode={mode}
           input={input}
           setInput={setInput}
