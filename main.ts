@@ -7,15 +7,15 @@ import { CompletionsCommand } from "jsr:@cliffy/command@1.0.0-rc.7/completions";
 import { UpgradeCommand } from "jsr:@cliffy/command@1.0.0-rc.7/upgrade";
 import { GithubProvider } from "jsr:@cliffy/command@1.0.0-rc.7/upgrade/provider/github";
 
-import { importBatch, importOne, getStatus, postAsk } from "./src/api.ts";
+import { getStatus, importBatch, importOne, postAsk } from "./src/api.ts";
 import {
-  resolveLangsmithConfig,
-  readConfig,
   getConfigPath,
-  setConfigKey,
-  unsetConfigKey,
   mask,
   openConfigInEditor,
+  readConfig,
+  resolveLangsmithConfig,
+  setConfigKey,
+  unsetConfigKey,
 } from "./src/config.ts";
 
 const VERSION = "v0.1.0";
@@ -28,15 +28,19 @@ async function runReview() {
   } catch {}
 
   // Lazy-load Ink and React only when needed to avoid TTY rawMode issues
-  const [{ default: React }, { render }, { default: FullScreenApp }] = await Promise.all([
-    import("npm:react@19"),
-    import("npm:ink@6"),
-    import("./src/ui/FullScreenApp.tsx"),
-  ]);
+  const [{ default: React }, { render }, { default: FullScreenApp }] =
+    await Promise.all([
+      import("npm:react@19"),
+      import("npm:ink@6"),
+      import("./src/ui/FullScreenApp.tsx"),
+    ]);
 
   // Guard against mismatched React version (Ink v6 needs React 19)
   // react-reconciler@0.32 expects __CLIENT_INTERNALS_DO_NOT_USE_OR_WARN_USERS_THEY_CANNOT_UPGRADE
-  if (!(React as any)?.__CLIENT_INTERNALS_DO_NOT_USE_OR_WARN_USERS_THEY_CANNOT_UPGRADE) {
+  if (
+    !(React as any)
+      ?.__CLIENT_INTERNALS_DO_NOT_USE_OR_WARN_USERS_THEY_CANNOT_UPGRADE
+  ) {
     throw new Error(
       "React 19 not resolved at runtime (missing __CLIENT_INTERNALS...). " +
         "Try: deno cache --reload cli/deno/main.ts, then reinstall with deno install -f -A --config cli/deno/deno.jsonc -n evals cli/deno/main.ts.",
@@ -146,7 +150,9 @@ const cmd = new Command()
     });
     console.log(
       chalk.bold(
-        `Imported ${res.imported} trace(s) from ${res.projectName ?? "(default)"}`,
+        `Imported ${res.imported} trace(s) from ${
+          res.projectName ?? "(default)"
+        }`,
       ),
     );
     if (res.traces?.length) {
@@ -188,7 +194,10 @@ const cmd = new Command()
     const s = await getStatus(traceId);
     console.log(chalk.bold("Trace ID:"), s.trace_id);
     console.log(chalk.bold("Analysis:"), s.analysis_status);
-    console.log(chalk.bold("Has Analyzer:"), s.has_analyzer_eval ? "yes" : "no");
+    console.log(
+      chalk.bold("Has Analyzer:"),
+      s.has_analyzer_eval ? "yes" : "no",
+    );
     console.log(
       chalk.bold("Has Correctness:"),
       s.has_correctness_eval ? "yes" : "no",
@@ -296,10 +305,11 @@ const cmd = new Command()
   .command(
     "upgrade",
     new UpgradeCommand({
-      name: "evals",
       main: "main.ts",
       args: ["-A", "--config", "deno.jsonc"],
-      provider: new GithubProvider({ repository: "darinkishore/mcp-evals-cli" }),
+      provider: new GithubProvider({
+        repository: "darinkishore/mcp-evals-cli",
+      }),
     }),
   );
 
