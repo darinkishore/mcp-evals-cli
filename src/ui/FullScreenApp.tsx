@@ -2,6 +2,10 @@ import React, { useEffect, useMemo, useState } from "npm:react@19";
 import { Box } from "npm:ink@6";
 import ReviewApp from "./Review.tsx";
 
+interface FullScreenAppProps {
+  failuresOnly?: boolean;
+}
+
 function getDims() {
   const proc = (globalThis as any).process;
   const cols = proc?.stdout?.columns ?? 80;
@@ -9,7 +13,7 @@ function getDims() {
   return { cols, rows };
 }
 
-export default function FullScreenApp() {
+export default function FullScreenApp({ failuresOnly = false }: FullScreenAppProps) {
   const [dims, setDims] = useState(getDims());
 
   useEffect(() => {
@@ -28,7 +32,7 @@ export default function FullScreenApp() {
   return (
     <Box width={dims.cols} height={dims.rows} flexDirection="column">
       <Box width={dims.cols} flexGrow={1} flexDirection="column">
-        <ReviewApp rows={dims.rows} cols={dims.cols} />
+        <ReviewApp rows={dims.rows} cols={dims.cols} failuresOnly={failuresOnly} />
       </Box>
     </Box>
   );

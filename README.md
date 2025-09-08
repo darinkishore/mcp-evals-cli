@@ -36,6 +36,10 @@ Run
   evals review
   # or
   evals -r
+  # failures-only mode (failed requirements or CRITICAL/HIGH/MEDIUM issues, prioritized):
+  evals review -f
+  # or
+  evals -r -f
 
 Shell Completions
 - Bash: source <(evals completions bash)
@@ -72,3 +76,4 @@ Notes
 - Viewer keys: h/← (prev), l/→ (next), f (feedback), a (ask), q (quit)
 - Skip/next workflow actions are disabled; navigation uses H/L only.
 - Ordering: chronological by creation time (newest first by default).
+ - Failures-only mode (-f): includes traces with any failed requirements OR any CRITICAL/HIGH/MEDIUM issues; excludes LOW-only. Priority within -f: Tier 0 (failed requirements or CRITICAL), then Tier 1 (HIGH), then Tier 2 (MEDIUM). Ties: in Tier 0, more failed requirements first, then more CRITICAL; in Tier 1, more HIGH; in Tier 2, more MEDIUM; otherwise keep arrival order.

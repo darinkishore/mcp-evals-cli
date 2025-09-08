@@ -21,7 +21,7 @@ import {
 
 const VERSION = "v0.1.0";
 
-async function runReview() {
+async function runReview(opts?: { failuresOnly?: boolean }) {
   // Ensure consistent dev/prod selection for React/Reconciler
   const procEnv = (globalThis as any)?.process?.env;
   try {
@@ -99,7 +99,7 @@ async function runReview() {
   nodeOn("SIGTERM", onSigTerm);
 
   enterAlt();
-  const ink = render(React.createElement(FullScreenApp));
+  const ink = render(React.createElement(FullScreenApp, { failuresOnly: !!opts?.failuresOnly }));
   try {
     await (ink as any).waitUntilExit?.();
   } finally {
@@ -119,9 +119,10 @@ const cmd = new Command()
   .description("Evals CLI (Deno + Ink)")
   // Use Cliffy's default help/version so it can show upgrade hints
   .globalOption("-r, --review", "Open the trace viewer (read-only)")
+  .globalOption("-f, --failures", "Show only failed requirements or CRITICAL/HIGH/MEDIUM issues with priority")
   .action(async (options) => {
     if (options.review) {
-      await runReview();
+      await runReview({ failuresOnly: !!options.failures });
     } else {
       await cmd.showHelp();
     }
@@ -224,8 +225,9 @@ cmd
 cmd
   .command("review")
   .description("Interactive trace viewer (read-only navigation)")
-  .action(async () => {
-    await runReview();
+  .option("-f, --failures", "Show only failed requirements or CRITICAL/HIGH/MEDIUM issues with priority")
+  .action(async (options) => {
+    await runReview({ failuresOnly: !!options.failures });
   });
 
 const configCmd = new Command()
