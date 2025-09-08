@@ -18,7 +18,7 @@ import {
   openConfigInEditor,
 } from "./src/config.ts";
 
-const VERSION = "0.1.0";
+const VERSION = "v0.1.0";
 
 async function runReview() {
   // Ensure consistent dev/prod selection for React/Reconciler
@@ -112,33 +112,7 @@ const cmd = new Command()
   .name("evals")
   .version(VERSION)
   .description("Evals CLI (Deno + Ink)")
-  // Override built-in help/version to avoid auto upgrade checks on --help/--version
-  .helpOption(false)
-  .versionOption(false)
-  .option(
-    "-V, --version",
-    "Show the version number for this program.",
-    {
-      standalone: true,
-      prepend: true,
-      action: function () {
-        const long = this.getRawArgs().includes("--version");
-        if (long) this.showLongVersion();
-        else this.showVersion();
-        this.exit();
-      },
-    },
-  )
-  .option("-h, --help", "Show this help.", {
-    standalone: true,
-    global: true,
-    prepend: true,
-    action: function () {
-      const long = this.getRawArgs().includes("--help");
-      this.showHelp({ long });
-      this.exit();
-    },
-  })
+  // Use Cliffy's default help/version so it can show upgrade hints
   .globalOption("-r, --review", "Open the trace viewer (read-only)")
   .action(async (options) => {
     if (options.review) {
