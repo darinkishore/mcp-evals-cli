@@ -139,7 +139,7 @@ const cmd = new Command()
       this.exit();
     },
   })
-  .globalOption("-r, --review", "Start the interactive review TUI")
+  .globalOption("-r, --review", "Open the trace viewer (read-only)")
   .action(async (options) => {
     if (options.review) {
       await runReview();
@@ -183,7 +183,7 @@ const cmd = new Command()
         );
       }
     }
-    console.log(`\nStart reviewing: ${chalk.cyan("evals review")}`);
+    console.log(`\nOpen viewer: ${chalk.cyan("evals review")}`);
   })
   .reset()
   // import-one
@@ -238,7 +238,7 @@ const cmd = new Command()
   .reset()
   // review
   .command("review")
-  .description("Start the interactive review TUI")
+  .description("Interactive trace viewer (read-only navigation)")
   .action(async () => {
     await runReview();
   })
