@@ -21,8 +21,6 @@ export default function ReviewApp({ rows, cols }: ReviewProps) {
   const [askAnswer, setAskAnswer] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
   const [refresh, setRefresh] = useState(0);
-  const [focus, setFocus] = useState<"left" | "right">("left");
-  const [rightOffset, setRightOffset] = useState<number>(0);
   const [input, setInput] = useState("");
 
   useEffect(() => {
@@ -31,7 +29,6 @@ export default function ReviewApp({ rows, cols }: ReviewProps) {
     setError(null);
     setAskAnswer(null);
     setNotice(null);
-    setRightOffset(0);
     getNextReview()
       .then((n) => {
         if (cancelled) return;
@@ -72,19 +69,6 @@ export default function ReviewApp({ rows, cols }: ReviewProps) {
     } else if (ch === "f") {
       setMode("feedback");
       setInput("");
-    } else if (ch === "h") {
-      setFocus("left");
-    } else if (ch === "l") {
-      setFocus("right");
-    } else if (ch === "j") {
-      // Scroll down in focused pane (right pane scroll implemented)
-      if (focus === "right") {
-        setRightOffset((o: number) => o + 1);
-      }
-    } else if (ch === "k") {
-      if (focus === "right") {
-        setRightOffset((o: number) => Math.max(0, o - 1));
-      }
     }
   });
 
@@ -129,7 +113,7 @@ export default function ReviewApp({ rows, cols }: ReviewProps) {
   if (error) return <Text color="red">{error}</Text>;
   if (!current) return <Text color="green">✓ All traces reviewed!</Text>;
 
-  // Approximate visible height for the right pane to enable scrolling
+  // Approximate visible height for the content panes
   const totalRows = rows ?? 24;
   const reservedBottom = 6; // space for ask/notice/controls
   const headerRows = 5;     // approx: boxed header with 3 lines + borders
@@ -137,42 +121,44 @@ export default function ReviewApp({ rows, cols }: ReviewProps) {
   const paneHeight = Math.max(4, totalRows - reservedBottom - headerRows - verticalGaps);
 
   return (
-    <Box flexDirection="column" gap={1}>
-      {/* Top: full-width header */}
-      <Header t={current} />
+    <Box flexDirection="column" height={totalRows} justifyContent="center">
+      <Box flexDirection="column" gap={1}>
+        {/* Top: full-width header */}
+        <Header t={current} />
 
       {/* Bottom: two boxes at the same height filling remaining space */}
       <Box flexDirection="row" gap={2} flexGrow={1}>
         {/* Left bottom box: Review Details */}
         <Box flexDirection="column" borderStyle="round" borderColor="cyan" paddingX={1} flexGrow={3} height={paneHeight}>
-          <Text>{`${focus === "left" ? "» " : "  "}${icons.details}`}</Text>
+          <Text>{icons.details}</Text>
           <Requirements requirements={current.requirements ?? []} />
           <Issues issues={current.issues ?? []} boxed={false} />
         </Box>
 
         {/* Right bottom box: Trace */}
         <Box flexDirection="column" flexGrow={2}>
-          <TraceExcerpt messages={current.messages} height={paneHeight} offset={rightOffset} focused={focus === "right"} />
+          <TraceExcerpt messages={current.messages} height={paneHeight} />
         </Box>
       </Box>
 
-      {/* Footer: ask/answer, notices, and controls */}
-      {askAnswer && (
-        <AskAnswer askAnswer={askAnswer} />
-      )}
+        {/* Footer: ask/answer, notices, and controls */}
+        {askAnswer && (
+          <AskAnswer askAnswer={askAnswer} />
+        )}
 
-      {notice && (
-        <Text color="green">{notice}</Text>
-      )}
+        {notice && (
+          <Text color="green">{notice}</Text>
+        )}
 
-      <InputControls 
-        mode={mode}
-        input={input}
-        setInput={setInput}
-        onSubmitAsk={onSubmitAsk}
-        onSubmitFeedback={onSubmitFeedback}
-        controls={controls}
-      />
+        <InputControls 
+          mode={mode}
+          input={input}
+          setInput={setInput}
+          onSubmitAsk={onSubmitAsk}
+          onSubmitFeedback={onSubmitFeedback}
+          controls={controls}
+        />
+      </Box>
     </Box>
   );
 }
