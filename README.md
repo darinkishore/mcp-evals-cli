@@ -12,6 +12,8 @@ Commands
 - ask <trace_id> <question...>: Ask about a stored trace.
 - review: Interactive TUI review of pending traces (server-ordered).
 - config: View/edit persistent config (API URL, LangSmith keys).
+- completions: Generate shell completions (bash, zsh, fish).
+- upgrade: (temporarily disabled) Self-upgrade from GitHub releases.
 
 Install
 1) Ensure Deno v2+ is installed.
@@ -31,6 +33,18 @@ Run
   evals review
   # or
   evals -r
+
+Shell Completions
+- Bash: source <(evals completions bash)
+- Fish: source (evals completions fish | psub)
+- Zsh:  source <(evals completions zsh)
+  # or write to fpath: evals completions zsh > /path/to/zsh/site-functions/_evals
+
+Upgrade (disabled for now)
+- TODO: Once the public CLI repo exists and has tags/releases, wire
+  GithubProvider(repository: "<public-user>/<public-repo>") in cli/deno/main.ts
+  and re-enable the UpgradeCommand. For now:
+  - evals upgrade  # prints a placeholder message
 
 Permissions
 - Network: backend API (EVAL_API_URL, default http://127.0.0.1:8001)
