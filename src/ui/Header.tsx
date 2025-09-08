@@ -1,10 +1,10 @@
 import React from "npm:react@19";
 import { Box, Text } from "npm:ink@6";
-import type { ReviewsNextResponse } from "../types.ts";
+import type { TraceBrowseItem } from "../types.ts";
 import { icons } from "./theme.ts";
 
 interface HeaderProps {
-  t: ReviewsNextResponse;
+  t: TraceBrowseItem;
 }
 
 export default function Header({ t }: HeaderProps) {
@@ -20,7 +20,7 @@ export default function Header({ t }: HeaderProps) {
         <Text bold>Trace</Text> {t.trace_id}  <Text italic>{correctness}</Text>
       </Text>
       <Text>Task: {t.task}</Text>
-      <Text>[{t.position}/{t.total_pending}] in queue</Text>
+      <Text>Viewing [{t.position}/{t.total_pending}]</Text>
     </Box>
   );
 }

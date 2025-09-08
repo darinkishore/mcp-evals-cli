@@ -10,7 +10,7 @@ Commands
 - import-one <trace_id>: Import a single trace by id.
 - status <trace_id>: Show analysis/review readiness for a trace.
 - ask <trace_id> <question...>: Ask about a stored trace.
-- review: Interactive TUI review of pending traces (server-ordered).
+- review: Interactive TUI viewer for traces (read-only navigation).
 - config: View/edit persistent config (API URL, LangSmith keys).
 - completions: Generate shell completions (bash, zsh, fish).
 - upgrade: (temporarily disabled) Self-upgrade from GitHub releases.
@@ -65,4 +65,6 @@ Config
 
 Notes
 - Colors/icons: ❌ failures, ✓ success, 🔧 issues, 📜 trace excerpt
-- Review keys: f (feedback), s (skip), a (ask), n (next), q (quit)
+- Viewer keys: h/← (prev), l/→ (next), f (feedback), a (ask), q (quit)
+- Skip/next workflow actions are disabled; navigation uses H/L only.
+- Ordering: chronological by creation time (newest first by default).

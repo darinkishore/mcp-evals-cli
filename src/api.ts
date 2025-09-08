@@ -3,7 +3,7 @@ import type {
   ImportOneResponse,
   StatusResponse,
   AskResponse,
-  ReviewsNextResponse,
+  TraceBrowseResponse,
 } from "./types.ts";
 import { readConfig } from "./config.ts";
 
@@ -67,20 +67,18 @@ export async function postAsk(traceId: string, question: string): Promise<AskRes
   });
 }
 
-export async function getNextReview(): Promise<ReviewsNextResponse | null> {
-  const base = await getBaseUrl();
-  const res = await fetch(`${base}/reviews/next`);
-  if (res.status === 404) return null;
-  if (!res.ok) throw new Error(`${res.status} ${res.statusText}`);
-  return res.json() as Promise<ReviewsNextResponse>;
-}
-
 export async function postFeedback(traceId: string, feedback: string): Promise<void> {
   await http(`/reviews/${encodeURIComponent(traceId)}/feedback?` + new URLSearchParams({ feedback }).toString(), {
     method: "POST",
   });
 }
 
-export async function postSkip(traceId: string): Promise<void> {
-  await http(`/reviews/${encodeURIComponent(traceId)}/skip`, { method: "POST" });
+export async function listTraces(offset = 0, limit = 50, order: 'asc' | 'desc' = 'desc'):
+  Promise<TraceBrowseResponse> {
+  return http<TraceBrowseResponse>(`/traces/list?` + new URLSearchParams({
+    offset: String(offset),
+    limit: String(limit),
+    only_completed: "true",
+    order,
+  }).toString());
 }

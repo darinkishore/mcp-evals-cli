@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useState } from "npm:react@19";
 import { Box, Text, useApp, useInput } from "npm:ink@6";
-import type { ReviewsNextResponse } from "../types.ts";
-import { getNextReview, postAsk, postFeedback, postSkip } from "../api.ts";
+import type { TraceBrowseItem } from "../types.ts";
+import { listTraces, postAsk, postFeedback } from "../api.ts";
 import { Issues, Header, Requirements, TraceExcerpt, AskAnswer, InputControls } from "./index.ts";
 import { icons } from "./theme.ts";
 
@@ -16,31 +16,41 @@ export default function ReviewApp({ rows, cols }: ReviewProps) {
   const { exit } = useApp();
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [current, setCurrent] = useState<ReviewsNextResponse | null>(null);
+  const [items, setItems] = useState<TraceBrowseItem[]>([]);
+  const [index, setIndex] = useState(0);
+  const current: TraceBrowseItem | null = items.length ? items[Math.max(0, Math.min(index, items.length - 1))] : null;
   const [mode, setMode] = useState<Mode>("idle");
   const [askAnswer, setAskAnswer] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
-  const [refresh, setRefresh] = useState(0);
   const [input, setInput] = useState("");
+  const [offset, setOffset] = useState(0);
+  const [total, setTotal] = useState<number | null>(null);
+  const pageSize = 25;
 
   useEffect(() => {
     let cancelled = false;
-    setLoading(true);
-    setError(null);
-    setAskAnswer(null);
-    setNotice(null);
-    getNextReview()
-      .then((n) => {
+    async function loadInitial() {
+      setLoading(true);
+      setError(null);
+      setAskAnswer(null);
+      setNotice(null);
+      try {
+        const res = await listTraces(0, pageSize);
         if (cancelled) return;
-        setCurrent(n);
-      })
-      .catch((e) => {
+        setItems(res.items as TraceBrowseItem[]);
+        setOffset(res.offset + res.items.length);
+        setTotal(res.total);
+        setIndex(0);
+      } catch (e) {
         if (cancelled) return;
-        setError(e.message ?? String(e));
-      })
-      .finally(() => !cancelled && setLoading(false));
+        setError((e as Error).message ?? String(e));
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    }
+    loadInitial();
     return () => { cancelled = true; };
-  }, [refresh]);
+  }, []);
 
   useInput(async (inp, key) => {
     if (mode !== "idle") return; // handled by input field
@@ -52,17 +62,37 @@ export default function ReviewApp({ rows, cols }: ReviewProps) {
     const ch = inp.toLowerCase();
     if (ch === "q") {
       exit();
-    } else if (ch === "n") {
-      setRefresh((x: number) => x + 1);
-    } else if (ch === "s") {
-      if (!current) return;
+    } else if (ch === "l" || key.rightArrow) {
+      // Next item (viewer)
+      setAskAnswer(null);
+      setNotice(null);
+      if (index < items.length - 1) {
+        setIndex(index + 1);
+        return;
+      }
+      // Need to fetch more if available
+      if (total !== null && offset >= total) {
+        setNotice("End of list");
+        return;
+      }
       try {
-        await postSkip(current.trace_id);
-        setNotice("Skipped");
-        setRefresh((x: number) => x + 1);
+        setLoading(true);
+        const res = await listTraces(offset, pageSize);
+        const newItems = [...items, ...(res.items as TraceBrowseItem[])];
+        setItems(newItems);
+        setOffset(res.offset + res.items.length);
+        setTotal(res.total);
+        setIndex(index + 1);
       } catch (e) {
         setError((e as Error).message);
+      } finally {
+        setLoading(false);
       }
+    } else if (ch === "h" || key.leftArrow) {
+      // Previous item (viewer)
+      setAskAnswer(null);
+      setNotice(null);
+      if (index > 0) setIndex(index - 1);
     } else if (ch === "a") {
       setMode("ask");
       setInput("");
@@ -94,7 +124,6 @@ export default function ReviewApp({ rows, cols }: ReviewProps) {
     try {
       await postFeedback(current.trace_id, fb);
       setNotice("✓ Feedback recorded");
-      setRefresh((x: number) => x + 1);
     } catch (e) {
       setError((e as Error).message);
     } finally {
@@ -105,13 +134,13 @@ export default function ReviewApp({ rows, cols }: ReviewProps) {
 
   const controls = useMemo(() => (
     <Text>
-      [f]eedback  [s]kip  [a]sk  [n]ext  [q]uit
+      [H] prev  [L] next   [f]eedback  [a]sk  [q]uit
     </Text>
   ), []);
 
   if (loading) return <Text color="gray">Loading…</Text>;
   if (error) return <Text color="red">{error}</Text>;
-  if (!current) return <Text color="green">✓ All traces reviewed!</Text>;
+  if (!current) return <Text color="yellow">No traces to view.</Text>;
 
   // Approximate visible height for the content panes
   const totalRows = rows ?? 24;
