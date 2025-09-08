@@ -185,6 +185,7 @@ const cmd = new Command()
     }
     console.log(`\nStart reviewing: ${chalk.cyan("evals review")}`);
   })
+  .reset()
   // import-one
   .command("import-one <traceId:string>")
   .description("Import a single trace by id")
@@ -205,6 +206,7 @@ const cmd = new Command()
       : "unchanged";
     console.log(chalk.bold(`Trace ${res.trace.traceId} ${status}.`));
   })
+  .reset()
   // status
   .command("status <traceId:string>")
   .description("Show analysis/review readiness for a trace")
@@ -223,6 +225,7 @@ const cmd = new Command()
     );
     if (s.created_at) console.log(chalk.bold("Created:"), s.created_at);
   })
+  .reset()
   // ask
   .command("ask <traceId:string> <question...:string>")
   .description("Ask a question about a stored trace")
@@ -232,12 +235,14 @@ const cmd = new Command()
     console.log(chalk.cyan("Ask:"));
     console.log(r.answer);
   })
+  .reset()
   // review
   .command("review")
   .description("Start the interactive review TUI")
   .action(async () => {
     await runReview();
   })
+  .reset()
   // config group
   .command(
     "config",
@@ -313,6 +318,7 @@ const cmd = new Command()
       .reset(),
   )
   .command("completions", new CompletionsCommand())
+  .reset()
   // TODO: Switch this placeholder to real UpgradeCommand once the public
   // CLI repo exists and has tags/releases (see CLAUDE.md "Subtree sync for Deno CLI").
   // Example (to enable later):
