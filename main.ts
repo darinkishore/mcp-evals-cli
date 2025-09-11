@@ -99,7 +99,9 @@ async function runReview(opts?: { failuresOnly?: boolean }) {
   nodeOn("SIGTERM", onSigTerm);
 
   enterAlt();
-  const ink = render(React.createElement(FullScreenApp, { failuresOnly: !!opts?.failuresOnly }));
+  const ink = render(
+    React.createElement(FullScreenApp, { failuresOnly: !!opts?.failuresOnly }),
+  );
   try {
     await (ink as any).waitUntilExit?.();
   } finally {
@@ -119,7 +121,10 @@ const cmd = new Command()
   .description("Evals CLI (Deno + Ink)")
   // Use Cliffy's default help/version so it can show upgrade hints
   .globalOption("-r, --review", "Open the trace viewer (read-only)")
-  .globalOption("-f, --failures", "Show only failed requirements or CRITICAL/HIGH/MEDIUM issues with priority")
+  .globalOption(
+    "-f, --failures",
+    "Show only failed requirements or CRITICAL/HIGH/MEDIUM issues with priority",
+  )
   .action(async (options) => {
     if (options.review) {
       await runReview({ failuresOnly: !!options.failures });
@@ -225,7 +230,10 @@ cmd
 cmd
   .command("review")
   .description("Interactive trace viewer (read-only navigation)")
-  .option("-f, --failures", "Show only failed requirements or CRITICAL/HIGH/MEDIUM issues with priority")
+  .option(
+    "-f, --failures",
+    "Show only failed requirements or CRITICAL/HIGH/MEDIUM issues with priority",
+  )
   .action(async (options) => {
     await runReview({ failuresOnly: !!options.failures });
   });

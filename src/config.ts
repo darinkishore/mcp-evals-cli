@@ -54,18 +54,25 @@ export async function writeConfig(cfg: EvalConfig): Promise<void> {
 }
 
 export async function resolveLangsmithConfig(
-  options: { apiKey?: string | null; projectId?: string | null; projectName?: string | null },
-): Promise<{ apiKey: string; projectId: string | undefined; projectName: string }>
-{
+  options: {
+    apiKey?: string | null;
+    projectId?: string | null;
+    projectName?: string | null;
+  },
+): Promise<
+  { apiKey: string; projectId: string | undefined; projectName: string }
+> {
   const envApiKey = Deno.env.get("LANGSMITH_API_KEY") || undefined;
   const envProjectId = Deno.env.get("LANGSMITH_PROJECT_ID") || undefined;
-  const envProjectName = Deno.env.get("LANGSMITH_PROJECT") || Deno.env.get("LANGSMITH_PROJECT_NAME") || undefined;
+  const envProjectName = Deno.env.get("LANGSMITH_PROJECT") ||
+    Deno.env.get("LANGSMITH_PROJECT_NAME") || undefined;
 
   const cfg = await readConfig();
 
   let apiKey = options.apiKey ?? envApiKey ?? cfg.langsmithApiKey;
   let projectId = options.projectId ?? envProjectId ?? cfg.langsmithProjectId;
-  let projectName = options.projectName ?? envProjectName ?? cfg.langsmithProjectName ?? "default";
+  let projectName = options.projectName ?? envProjectName ??
+    cfg.langsmithProjectName ?? "default";
 
   if (!apiKey) {
     // Prompt minimally on first run; store for next time
@@ -74,8 +81,13 @@ export async function resolveLangsmithConfig(
     if (!apiKey) throw new Error("LANGSMITH_API_KEY is required");
   }
 
-  if (!projectId && !options.projectName && !envProjectName && !cfg.langsmithProjectName) {
-    const input = prompt("Enter project ID (or leave blank to use project name 'default'):") ?? "";
+  if (
+    !projectId && !options.projectName && !envProjectName &&
+    !cfg.langsmithProjectName
+  ) {
+    const input = prompt(
+      "Enter project ID (or leave blank to use project name 'default'):",
+    ) ?? "";
     projectId = input.trim() || undefined;
   }
 
@@ -90,7 +102,10 @@ export async function resolveLangsmithConfig(
   return { apiKey, projectId, projectName };
 }
 
-export async function setConfigKey(key: keyof EvalConfig, value: string | undefined) {
+export async function setConfigKey(
+  key: keyof EvalConfig,
+  value: string | undefined,
+) {
   const curr = await readConfig();
   const next: EvalConfig = { ...curr, [key]: value } as EvalConfig;
   await writeConfig(next);
@@ -118,8 +133,14 @@ export async function openConfigInEditor(): Promise<void> {
   } catch {
     await Deno.writeTextFile(path, JSON.stringify(await readConfig(), null, 2));
   }
-  const editor = Deno.env.get("VISUAL") || Deno.env.get("EDITOR") || (Deno.build.os === "windows" ? "notepad" : "vi");
-  const cmd = new Deno.Command(editor, { args: [path], stdin: "inherit", stdout: "inherit", stderr: "inherit" });
+  const editor = Deno.env.get("VISUAL") || Deno.env.get("EDITOR") ||
+    (Deno.build.os === "windows" ? "notepad" : "vi");
+  const cmd = new Deno.Command(editor, {
+    args: [path],
+    stdin: "inherit",
+    stdout: "inherit",
+    stderr: "inherit",
+  });
   const p = cmd.spawn();
   const status = await p.status;
   if (!status.success) {

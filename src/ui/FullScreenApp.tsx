@@ -13,7 +13,9 @@ function getDims() {
   return { cols, rows };
 }
 
-export default function FullScreenApp({ failuresOnly = false }: FullScreenAppProps) {
+export default function FullScreenApp(
+  { failuresOnly = false }: FullScreenAppProps,
+) {
   const [dims, setDims] = useState(getDims());
 
   useEffect(() => {
@@ -32,7 +34,11 @@ export default function FullScreenApp({ failuresOnly = false }: FullScreenAppPro
   return (
     <Box width={dims.cols} height={dims.rows} flexDirection="column">
       <Box width={dims.cols} flexGrow={1} flexDirection="column">
-        <ReviewApp rows={dims.rows} cols={dims.cols} failuresOnly={failuresOnly} />
+        <ReviewApp
+          rows={dims.rows}
+          cols={dims.cols}
+          failuresOnly={failuresOnly}
+        />
       </Box>
     </Box>
   );

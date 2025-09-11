@@ -36,8 +36,9 @@ export interface AskResponse {
 }
 
 export interface ReviewIssue {
-  severity: 'CRITICAL' | 'HIGH' | 'MEDIUM' | 'LOW' | string;
+  severity: "CRITICAL" | "HIGH" | "MEDIUM" | "LOW" | string;
   description: string;
+  summary?: string;
 }
 
 export interface ReviewRequirement {
@@ -53,8 +54,8 @@ export interface TraceBrowseItem {
   correctness?: boolean | null;
   requirements: ReviewRequirement[];
   issues: ReviewIssue[];
-  position: number;        // 1-based index in the full list
-  total_pending: number;   // reuse field name for header display (overall total)
+  position: number; // 1-based index in the full list
+  total_pending: number; // reuse field name for header display (overall total)
 }
 
 export interface TraceBrowseResponse {

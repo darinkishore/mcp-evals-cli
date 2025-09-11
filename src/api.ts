@@ -1,8 +1,8 @@
 import type {
+  AskResponse,
   ImportBatchResponse,
   ImportOneResponse,
   StatusResponse,
-  AskResponse,
   TraceBrowseResponse,
 } from "./types.ts";
 import { readConfig } from "./config.ts";
@@ -60,25 +60,40 @@ export async function getStatus(traceId: string): Promise<StatusResponse> {
   return http<StatusResponse>(`/traces/status/${encodeURIComponent(traceId)}`);
 }
 
-export async function postAsk(traceId: string, question: string): Promise<AskResponse> {
+export async function postAsk(
+  traceId: string,
+  question: string,
+): Promise<AskResponse> {
   return http<AskResponse>(`/ask/${encodeURIComponent(traceId)}`, {
     method: "POST",
     body: JSON.stringify({ question }),
   });
 }
 
-export async function postFeedback(traceId: string, feedback: string): Promise<void> {
-  await http(`/reviews/${encodeURIComponent(traceId)}/feedback?` + new URLSearchParams({ feedback }).toString(), {
-    method: "POST",
-  });
+export async function postFeedback(
+  traceId: string,
+  feedback: string,
+): Promise<void> {
+  await http(
+    `/reviews/${encodeURIComponent(traceId)}/feedback?` +
+      new URLSearchParams({ feedback }).toString(),
+    {
+      method: "POST",
+    },
+  );
 }
 
-export async function listTraces(offset = 0, limit = 50, order: 'asc' | 'desc' = 'desc'):
-  Promise<TraceBrowseResponse> {
-  return http<TraceBrowseResponse>(`/traces/list?` + new URLSearchParams({
-    offset: String(offset),
-    limit: String(limit),
-    only_completed: "true",
-    order,
-  }).toString());
+export async function listTraces(
+  offset = 0,
+  limit = 50,
+  order: "asc" | "desc" = "desc",
+): Promise<TraceBrowseResponse> {
+  return http<TraceBrowseResponse>(
+    `/traces/list?` + new URLSearchParams({
+      offset: String(offset),
+      limit: String(limit),
+      only_completed: "true",
+      order,
+    }).toString(),
+  );
 }

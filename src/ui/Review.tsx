@@ -49,6 +49,7 @@ export default function ReviewApp(
   const [input, setInput] = useState("");
   const [offset, setOffset] = useState(0);
   const [total, setTotal] = useState<number | null>(null);
+  const [showSummaries, setShowSummaries] = useState(true);
   const pageSize = 25;
 
   useEffect(() => {
@@ -133,6 +134,9 @@ export default function ReviewApp(
     } else if (ch === "f") {
       setMode("feedback");
       setInput("");
+    } else if (ch === "s") {
+      setShowSummaries(!showSummaries);
+      setNotice(showSummaries ? "Showing full descriptions" : "Showing summaries");
     }
   });
 
@@ -168,11 +172,13 @@ export default function ReviewApp(
 
   const controls = useMemo(() => (
     <Text>
-      [H] prev [L] next [f]eedback [a]sk [q]uit{failuresOnly
+      [H] prev [L] next [s]ummary [f]eedback [a]sk [q]uit{failuresOnly
         ? "   (Filtered: failures only)"
-        : ""}
+        : ""}{showSummaries
+        ? "   (Summaries)"
+        : "   (Full)"}
     </Text>
-  ), []);
+  ), [showSummaries, failuresOnly]);
 
   if (loading) return <Text color="gray">Loading…</Text>;
   if (error) return <Text color="red">{error}</Text>;
@@ -207,7 +213,7 @@ export default function ReviewApp(
           >
             <Text>{icons.details}</Text>
             <Requirements requirements={current.requirements ?? []} />
-            <Issues issues={current.issues ?? []} boxed={false} />
+            <Issues issues={current.issues ?? []} boxed={false} showSummaries={showSummaries} />
           </Box>
 
           {/* Right bottom box: Trace */}

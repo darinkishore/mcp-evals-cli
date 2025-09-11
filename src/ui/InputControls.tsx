@@ -13,18 +13,18 @@ interface InputControlsProps {
   controls: React.ReactNode;
 }
 
-export default function InputControls({ 
-  mode, 
-  input, 
-  setInput, 
-  onSubmitAsk, 
-  onSubmitFeedback, 
-  controls 
+export default function InputControls({
+  mode,
+  input,
+  setInput,
+  onSubmitAsk,
+  onSubmitFeedback,
+  controls,
 }: InputControlsProps) {
   if (mode === "ask") {
     return (
       <Box>
-        <Text>Ask: </Text>
+        <Text>Ask:</Text>
         <TextInput value={input} onChange={setInput} onSubmit={onSubmitAsk} />
       </Box>
     );
@@ -33,8 +33,12 @@ export default function InputControls({
   if (mode === "feedback") {
     return (
       <Box>
-        <Text>Feedback: </Text>
-        <TextInput value={input} onChange={setInput} onSubmit={onSubmitFeedback} />
+        <Text>Feedback:</Text>
+        <TextInput
+          value={input}
+          onChange={setInput}
+          onSubmit={onSubmitFeedback}
+        />
       </Box>
     );
   }

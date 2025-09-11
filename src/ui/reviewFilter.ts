@@ -9,10 +9,10 @@ export function counts(item: TraceBrowseItem) {
   const issues = item.issues ?? [];
   let critical = 0, high = 0, medium = 0, low = 0;
   for (const i of issues) {
-    if (i.severity === 'CRITICAL') critical++;
-    else if (i.severity === 'HIGH') high++;
-    else if (i.severity === 'MEDIUM') medium++;
-    else if (i.severity === 'LOW') low++;
+    if (i.severity === "CRITICAL") critical++;
+    else if (i.severity === "HIGH") high++;
+    else if (i.severity === "MEDIUM") medium++;
+    else if (i.severity === "LOW") low++;
   }
   return { critical, high, medium, low };
 }
@@ -20,10 +20,10 @@ export function counts(item: TraceBrowseItem) {
 export function tier(item: TraceBrowseItem): number {
   const failed = hasFailedRequirements(item) > 0;
   const { critical, high, medium } = counts(item);
-  if (failed || critical > 0) return 0;   // Tier 0: failed req OR any critical
-  if (high > 0) return 1;                 // Tier 1: any high
-  if (medium > 0) return 2;               // Tier 2: any medium
-  return 3;                               // Not included
+  if (failed || critical > 0) return 0; // Tier 0: failed req OR any critical
+  if (high > 0) return 1; // Tier 1: any high
+  if (medium > 0) return 2; // Tier 2: any medium
+  return 3; // Not included
 }
 
 export function matchesFailuresOnly(item: TraceBrowseItem): boolean {
@@ -31,7 +31,10 @@ export function matchesFailuresOnly(item: TraceBrowseItem): boolean {
   return t <= 2; // include Tiers 0,1,2; exclude only-low or none
 }
 
-export function compareForFailuresMode(a: TraceBrowseItem, b: TraceBrowseItem): number {
+export function compareForFailuresMode(
+  a: TraceBrowseItem,
+  b: TraceBrowseItem,
+): number {
   const ta = tier(a);
   const tb = tier(b);
   if (ta !== tb) return ta - tb; // lower tier first
@@ -60,4 +63,3 @@ export function compareForFailuresMode(a: TraceBrowseItem, b: TraceBrowseItem): 
   // Fallback: stable order (no change)
   return 0;
 }
-
