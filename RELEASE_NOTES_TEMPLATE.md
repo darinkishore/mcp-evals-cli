@@ -10,7 +10,7 @@ Highlights
 Install
 
 - Stable (tagged):
-  - `deno install -g -A -n evals https://raw.githubusercontent.com/darinkishore/mcp-evals-cli/vX.Y.Z/main.ts`
+  - `deno install -g -A --config https://raw.githubusercontent.com/darinkishore/mcp-evals-cli/vX.Y.Z/deno.jsonc -n evals https://raw.githubusercontent.com/darinkishore/mcp-evals-cli/vX.Y.Z/main.ts`
 - Completions:
   - Bash: `source <(evals completions bash)`
   - Fish: `source (evals completions fish | psub)`

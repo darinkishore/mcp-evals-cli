@@ -21,11 +21,13 @@ Commands
 Install
 
 1. Ensure Deno v2+ is installed.
-2. Public (stable) install from tag: deno install -g -A -n evals
+2. Public (stable) install from tag: deno install -g -A --config\
+   https://raw.githubusercontent.com/darinkishore/mcp-evals-cli/v0.1.0/deno.jsonc\
+   -n evals
    https://raw.githubusercontent.com/darinkishore/mcp-evals-cli/v0.1.0/main.ts
    # Replace v0.1.0 with the latest release tag
-3. Monorepo (dev) install from this repo: deno install -g -A -n evals
-   cli/deno/main.ts
+3. Monorepo (dev) install from this repo: deno install -g -A --config\
+   cli/deno/deno.jsonc -n evals cli/deno/main.ts
 
 Run
 

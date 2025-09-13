@@ -1,4 +1,4 @@
-#!/usr/bin/env -S deno run -A
+#!/usr/bin/env -S deno run -A --config cli/deno/deno.jsonc
 // deno-lint-ignore-file no-explicit-any
 import chalk from "chalk";
 

@@ -1,15 +1,15 @@
 {
   "tasks": {
-    "review": "deno run -A cli/deno/main.ts review",
-    "import": "deno run -A cli/deno/main.ts import",
-    "import-one": "deno run -A cli/deno/main.ts import-one",
-    "status": "deno run -A cli/deno/main.ts status",
-    "ask": "deno run -A cli/deno/main.ts ask",
-    "config": "deno run -A cli/deno/main.ts config",
-    "dev": "deno run -A --watch main.ts",
-    "dev:review": "deno run -A --watch main.ts review",
-    "install:dev": "deno install -g -A --name evals-dev --config deno.jsonc main.ts",
-    "install": "deno install -g -A --name evals --config deno.jsonc main.ts"
+    "review": "deno run -A --config cli/deno/deno.jsonc cli/deno/main.ts review",
+    "import": "deno run -A --config cli/deno/deno.jsonc cli/deno/main.ts import",
+    "import-one": "deno run -A --config cli/deno/deno.jsonc cli/deno/main.ts import-one",
+    "status": "deno run -A --config cli/deno/deno.jsonc cli/deno/main.ts status",
+    "ask": "deno run -A --config cli/deno/deno.jsonc cli/deno/main.ts ask",
+    "config": "deno run -A --config cli/deno/deno.jsonc cli/deno/main.ts config",
+    "dev": "deno run -A --config cli/deno/deno.jsonc --watch cli/deno/main.ts",
+    "dev:review": "deno run -A --config cli/deno/deno.jsonc --watch cli/deno/main.ts review",
+    "install:dev": "deno install -g -A --config cli/deno/deno.jsonc --name evals-dev cli/deno/main.ts",
+    "install": "deno install -g -A --config cli/deno/deno.jsonc --name evals cli/deno/main.ts"
   },
   "nodeModulesDir": "auto",
   "compilerOptions": {
