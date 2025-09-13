@@ -1,5 +1,4 @@
-import React from "npm:react@19";
-import { Box, Text } from "npm:ink@6";
+import { Box, Text } from "ink";
 import type { ReviewIssue } from "../types.ts";
 import Severity from "./Severity.tsx";
 import { icons } from "./theme.ts";
@@ -10,7 +9,9 @@ interface IssuesProps {
   showSummaries?: boolean;
 }
 
-export default function Issues({ issues, boxed = true, showSummaries = true }: IssuesProps) {
+export default function Issues(
+  { issues, boxed = true, showSummaries = true }: IssuesProps,
+) {
   // Sort by severity: CRITICAL -> HIGH -> MEDIUM -> LOW -> others
   const order: Record<string, number> = {
     CRITICAL: 0,
@@ -42,7 +43,9 @@ export default function Issues({ issues, boxed = true, showSummaries = true }: I
         {sorted.map((i, idx) => (
           <Box key={idx} gap={2}>
             <Severity level={i.severity} />
-            <Text>{showSummaries ? (i.summary || i.description) : i.description}</Text>
+            <Text>
+              {showSummaries ? (i.summary || i.description) : i.description}
+            </Text>
           </Box>
         ))}
       </>

@@ -1,6 +1,6 @@
-import { Box, Text } from "npm:ink@6";
-import React from "npm:react@19";
-import TextInput from "npm:ink-text-input@6";
+import { Box, Text } from "ink";
+import type { ReactNode } from "react";
+import TextInput from "ink-text-input";
 
 type Mode = "idle" | "ask" | "feedback";
 
@@ -10,7 +10,7 @@ interface InputControlsProps {
   setInput: (value: string) => void;
   onSubmitAsk: () => void;
   onSubmitFeedback: () => void;
-  controls: React.ReactNode;
+  controls: ReactNode;
 }
 
 export default function InputControls({

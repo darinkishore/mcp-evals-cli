@@ -1,4 +1,4 @@
-import { join } from "https://deno.land/std@0.224.0/path/mod.ts";
+import { join } from "@std/path";
 // Avoid Node's readline-sync to prevent TTY rawMode issues under Deno's
 // Node-compat layer. Use Deno's native prompt instead.
 
@@ -71,7 +71,7 @@ export async function resolveLangsmithConfig(
 
   let apiKey = options.apiKey ?? envApiKey ?? cfg.langsmithApiKey;
   let projectId = options.projectId ?? envProjectId ?? cfg.langsmithProjectId;
-  let projectName = options.projectName ?? envProjectName ??
+  const projectName = options.projectName ?? envProjectName ??
     cfg.langsmithProjectName ?? "default";
 
   if (!apiKey) {

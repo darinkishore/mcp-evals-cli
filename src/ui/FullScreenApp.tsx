@@ -1,5 +1,6 @@
-import React, { useEffect, useMemo, useState } from "npm:react@19";
-import { Box } from "npm:ink@6";
+import process from "node:process";
+import { useEffect, useState } from "react";
+import { Box } from "ink";
 import ReviewApp from "./Review.tsx";
 
 interface FullScreenAppProps {
@@ -7,9 +8,8 @@ interface FullScreenAppProps {
 }
 
 function getDims() {
-  const proc = (globalThis as any).process;
-  const cols = proc?.stdout?.columns ?? 80;
-  const rows = proc?.stdout?.rows ?? 24;
+  const cols = process.stdout?.columns ?? 80;
+  const rows = process.stdout?.rows ?? 24;
   return { cols, rows };
 }
 
@@ -19,12 +19,11 @@ export default function FullScreenApp(
   const [dims, setDims] = useState(getDims());
 
   useEffect(() => {
-    const proc = (globalThis as any).process;
     const onResize = () => setDims(getDims());
-    if (proc?.stdout?.on) {
-      proc.stdout.on("resize", onResize);
+    if (process.stdout?.on) {
+      process.stdout.on("resize", onResize);
       return () => {
-        if (proc?.stdout?.off) proc.stdout.off("resize", onResize);
+        process.stdout?.off?.("resize", onResize);
       };
     }
     return () => {};

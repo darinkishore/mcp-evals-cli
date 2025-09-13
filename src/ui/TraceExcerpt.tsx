@@ -1,4 +1,4 @@
-import { Box, Text } from "npm:ink@6";
+import { Box, Text } from "ink";
 import { icons } from "./theme.ts";
 
 interface TraceExcerptProps {
@@ -25,8 +25,10 @@ export default function TraceExcerpt(
       const rest = tsMatch[1] ?? "";
       return (
         <Text key={idx}>
-          <Text color="gray">{trimmed.slice(0, trimmed.length - rest.length)}</Text>
-          <Text> {rest}</Text>
+          <Text color="gray">
+            {trimmed.slice(0, trimmed.length - rest.length)}
+          </Text>
+          <Text>{rest}</Text>
         </Text>
       );
     }
@@ -56,14 +58,16 @@ export default function TraceExcerpt(
           <Text color={color} bold>
             {rawLabel}:
           </Text>
-          {rest ? <Text> {rest}</Text> : null}
+          {rest ? <Text>{rest}</Text> : null}
         </Text>
       );
     }
 
     // JSON-ish: dim to reduce noise
-    if ((trimmed.startsWith("{") && trimmed.endsWith("}")) ||
-      (trimmed.startsWith("[") && trimmed.endsWith("]"))) {
+    if (
+      (trimmed.startsWith("{") && trimmed.endsWith("}")) ||
+      (trimmed.startsWith("[") && trimmed.endsWith("]"))
+    ) {
       return <Text key={idx} color="gray">{trimmed}</Text>;
     }
 

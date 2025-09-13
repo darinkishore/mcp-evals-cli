@@ -1,5 +1,4 @@
-import React from "npm:react@19";
-import { Box, Text } from "npm:ink@6";
+import { Box, Text } from "ink";
 
 interface AskAnswerProps {
   askAnswer: string;
@@ -14,7 +13,9 @@ export default function AskAnswer({ askAnswer }: AskAnswerProps) {
       paddingX={1}
     >
       <Text>Ask</Text>
-      {askAnswer.split("\n").map((l: string) => <Text>{l}</Text>)}
+      {askAnswer.split("\n").map((l: string, i: number) => (
+        <Text key={i}>{l}</Text>
+      ))}
     </Box>
   );
 }

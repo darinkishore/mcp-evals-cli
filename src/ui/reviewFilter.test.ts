@@ -1,4 +1,4 @@
-import { assertEquals } from "jsr:@std/assert@1/assert-equals";
+import { assertEquals } from "@std/assert";
 import type { TraceBrowseItem } from "../types.ts";
 import {
   compareForFailuresMode,

@@ -1,11 +1,11 @@
 #!/usr/bin/env -S deno run -A
 // deno-lint-ignore-file no-explicit-any
-import chalk from "npm:chalk@5";
+import chalk from "chalk";
 
-import { Command } from "jsr:@cliffy/command@1.0.0-rc.7";
-import { CompletionsCommand } from "jsr:@cliffy/command@1.0.0-rc.7/completions";
-import { UpgradeCommand } from "jsr:@cliffy/command@1.0.0-rc.7/upgrade";
-import { GithubProvider } from "jsr:@cliffy/command@1.0.0-rc.7/upgrade/provider/github";
+import { Command } from "@cliffy/command";
+import { CompletionsCommand } from "@cliffy/command/completions";
+import { UpgradeCommand } from "@cliffy/command/upgrade";
+import { GithubProvider } from "@cliffy/command/upgrade/provider/github";
 
 import { getStatus, importBatch, importOne, postAsk } from "./src/api.ts";
 import {
@@ -31,8 +31,8 @@ async function runReview(opts?: { failuresOnly?: boolean }) {
   // Lazy-load Ink and React only when needed to avoid TTY rawMode issues
   const [{ default: React }, { render }, { default: FullScreenApp }] =
     await Promise.all([
-      import("npm:react@19"),
-      import("npm:ink@6"),
+      import("react"),
+      import("ink"),
       import("./src/ui/FullScreenApp.tsx"),
     ]);
 

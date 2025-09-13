@@ -1,5 +1,4 @@
-import React from "npm:react@19";
-import { Box, Text } from "npm:ink@6";
+import { Box, Text } from "ink";
 import type { ReviewRequirement } from "../types.ts";
 import { icons } from "./theme.ts";
 

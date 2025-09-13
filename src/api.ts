@@ -30,7 +30,7 @@ async function http<T>(path: string, init?: RequestInit): Promise<T> {
   return res.json() as Promise<T>;
 }
 
-export async function importBatch(payload: {
+export function importBatch(payload: {
   projectId?: string;
   projectName?: string;
   apiKey?: string;
@@ -44,7 +44,7 @@ export async function importBatch(payload: {
   });
 }
 
-export async function importOne(payload: {
+export function importOne(payload: {
   traceId: string;
   projectId?: string;
   projectName?: string;
@@ -56,11 +56,11 @@ export async function importOne(payload: {
   });
 }
 
-export async function getStatus(traceId: string): Promise<StatusResponse> {
+export function getStatus(traceId: string): Promise<StatusResponse> {
   return http<StatusResponse>(`/traces/status/${encodeURIComponent(traceId)}`);
 }
 
-export async function postAsk(
+export function postAsk(
   traceId: string,
   question: string,
 ): Promise<AskResponse> {
@@ -83,7 +83,7 @@ export async function postFeedback(
   );
 }
 
-export async function listTraces(
+export function listTraces(
   offset = 0,
   limit = 50,
   order: "asc" | "desc" = "desc",

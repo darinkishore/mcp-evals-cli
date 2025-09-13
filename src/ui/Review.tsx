@@ -1,5 +1,5 @@
-import { useEffect, useMemo, useState } from "npm:react@19";
-import { Box, Text, useApp, useInput } from "npm:ink@6";
+import { useEffect, useMemo, useState } from "react";
+import { Box, Text, useApp, useInput } from "ink";
 import type { TraceBrowseItem } from "../types.ts";
 import { listTraces, postAsk, postFeedback } from "../api.ts";
 import {
@@ -136,7 +136,9 @@ export default function ReviewApp(
       setInput("");
     } else if (ch === "s") {
       setShowSummaries(!showSummaries);
-      setNotice(showSummaries ? "Showing full descriptions" : "Showing summaries");
+      setNotice(
+        showSummaries ? "Showing full descriptions" : "Showing summaries",
+      );
     }
   });
 
@@ -174,9 +176,8 @@ export default function ReviewApp(
     <Text>
       [H] prev [L] next [s]ummary [f]eedback [a]sk [q]uit{failuresOnly
         ? "   (Filtered: failures only)"
-        : ""}{showSummaries
-        ? "   (Summaries)"
-        : "   (Full)"}
+        : ""}
+      {showSummaries ? "   (Summaries)" : "   (Full)"}
     </Text>
   ), [showSummaries, failuresOnly]);
 
@@ -213,7 +214,11 @@ export default function ReviewApp(
           >
             <Text>{icons.details}</Text>
             <Requirements requirements={current.requirements ?? []} />
-            <Issues issues={current.issues ?? []} boxed={false} showSummaries={showSummaries} />
+            <Issues
+              issues={current.issues ?? []}
+              boxed={false}
+              showSummaries={showSummaries}
+            />
           </Box>
 
           {/* Right bottom box: Trace */}
