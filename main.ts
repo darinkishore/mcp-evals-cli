@@ -28,28 +28,90 @@ async function runReview(opts?: { failuresOnly?: boolean }) {
     if (procEnv && !("NODE_ENV" in procEnv)) procEnv.NODE_ENV = "development";
   } catch { /* ignore */ }
 
-  // Lazy-load Ink, React, and fullscreen-ink
-  const [{ default: React }, { withFullScreen }, { default: FullScreenApp }] =
+  // Lazy-load Ink and React only when needed to avoid TTY rawMode issues
+  const [{ default: React }, { render }, { default: FullScreenApp }] =
     await Promise.all([
       import("react"),
-      import("fullscreen-ink"),
+      import("ink"),
       import("./src/ui/FullScreenApp.tsx"),
     ]);
 
   // Guard against mismatched React version (Ink v6 needs React 19)
-  if (!(React as any)?.__CLIENT_INTERNALS_DO_NOT_USE_OR_WARN_USERS_THEY_CANNOT_UPGRADE) {
+  if (
+    !(React as any)
+      ?.__CLIENT_INTERNALS_DO_NOT_USE_OR_WARN_USERS_THEY_CANNOT_UPGRADE
+  ) {
     throw new Error(
       "React 19 not resolved at runtime (missing __CLIENT_INTERNALS...). " +
         "Try: deno cache --reload cli/deno/main.ts, then reinstall with deno install -f -A --config cli/deno/deno.jsonc -n evals cli/deno/main.ts.",
     );
   }
 
-  const wrapper = withFullScreen(
+  const proc: any = (globalThis as any).process;
+  const write = (s: string) => {
+    try {
+      if (proc?.stdout?.isTTY && proc?.stdout?.write) proc.stdout.write(s);
+    } catch {
+      // ignore
+    }
+  };
+  const enterAlt = () => write("\x1b[?1049h");
+  const leaveAlt = () => write("\x1b[?1049l");
+
+  let cleaned = false;
+  const cleanup = () => {
+    if (cleaned) return;
+    cleaned = true;
+    leaveAlt();
+  };
+
+  // Install signal handlers for robust restore
+  const denoHasSignals = typeof (Deno as any)?.addSignalListener === "function";
+  const denoAdd = (sig: string, fn: () => void) => {
+    try {
+      (Deno as any).addSignalListener?.(sig, fn);
+    } catch { /* ignore */ }
+  };
+  const denoRemove = (sig: string, fn: () => void) => {
+    try {
+      (Deno as any).removeSignalListener?.(sig, fn);
+    } catch { /* ignore */ }
+  };
+  const nodeOn = (ev: string, fn: () => void) => {
+    try {
+      proc?.on?.(ev, fn);
+    } catch { /* ignore */ }
+  };
+  const nodeOff = (ev: string, fn: () => void) => {
+    try {
+      proc?.off?.(ev, fn);
+    } catch { /* ignore */ }
+  };
+
+  const onSigInt = () => cleanup();
+  const onSigTerm = () => cleanup();
+  if (denoHasSignals) {
+    denoAdd("SIGINT", onSigInt);
+    denoAdd("SIGTERM", onSigTerm);
+  }
+  nodeOn("SIGINT", onSigInt);
+  nodeOn("SIGTERM", onSigTerm);
+
+  enterAlt();
+  const ink = render(
     React.createElement(FullScreenApp, { failuresOnly: !!opts?.failuresOnly }),
-    { exitOnCtrlC: false }, // we manage exit within the app
   );
-  await wrapper.start();
-  await wrapper.waitUntilExit();
+  try {
+    await (ink as any).waitUntilExit?.();
+  } finally {
+    cleanup();
+    if (denoHasSignals) {
+      denoRemove("SIGINT", onSigInt);
+      denoRemove("SIGTERM", onSigTerm);
+    }
+    nodeOff("SIGINT", onSigInt);
+    nodeOff("SIGTERM", onSigTerm);
+  }
 }
 
 const cmd = new Command()
