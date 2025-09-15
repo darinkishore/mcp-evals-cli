@@ -1,5 +1,7 @@
-import { Box, Text } from "ink";
+import { Box, Text, useStdin } from "ink";
+import { useEffect, useMemo } from "react";
 import type { ReactNode } from "react";
+import process from "node:process";
 import type { TraceBrowseItem, ReviewIssue, ReviewRequirement } from "../types.ts";
 import { icons } from "./theme.ts";
 
@@ -17,16 +19,12 @@ function clamp(n: number, lo: number, hi: number): number {
   return Math.max(lo, Math.min(hi, n));
 }
 
-function* linesFromTrace(messages: string, folded: boolean): Generator<ReactNode> {
+function* linesFromTrace(messages: string, _folded: boolean): Generator<ReactNode> {
   const all = messages.split("\n");
   yield <Text>{icons.trace}</Text>;
   for (const [i, line] of all.entries()) {
     const trimmed = line.trim();
-    // Fold JSON-ish when collapsed
-    if (folded && ((trimmed.startsWith("{") && trimmed.endsWith("}")) || (trimmed.startsWith("[") && trimmed.endsWith("]")))) {
-      yield <Text color="gray">[json]</Text>;
-      continue;
-    }
+    // Do not alter message bodies; backend already formats for terminal
     // Timestamp dim
     const tsMatch = trimmed.match(/^\[\d{4}-\d{2}-\d{2}[^\]]*\]\s*(.*)$/);
     if (tsMatch) {
@@ -126,7 +124,7 @@ function* linesFromIssues(issues: ReviewIssue[], folded: boolean): Generator<Rea
 }
 
 export default function TranscriptView({ t, rows, cols, offset, onOffsetChange, showSummaries, notice }: TranscriptViewProps) {
-  const folded = showSummaries; // true = folded/summary
+  const folded = showSummaries; // true = summary for issues/requirements only
 
   // Build content lines as a flat list
   const lines: ReactNode[] = [];
@@ -141,6 +139,44 @@ export default function TranscriptView({ t, rows, cols, offset, onOffsetChange, 
   const maxOffset = Math.max(0, lines.length - visible);
   const start = clamp(offset, 0, maxOffset);
   const end = Math.min(lines.length, start + visible);
+
+  // Keep parent offset clamped when content/rows change
+  useEffect(() => {
+    if (start !== offset) onOffsetChange(start);
+  }, [start, offset, onOffsetChange]);
+
+  // Mouse wheel support (SGR 1006). Enable while mounted; cleanup on unmount
+  const { stdin, setRawMode, isRawModeSupported } = useStdin();
+  useEffect(() => {
+    if (!stdin || !isRawModeSupported) return;
+    try { setRawMode?.(true); } catch { /* ignore */ }
+    // Enable SGR mouse mode
+    try {
+      process.stdout?.write?.("\x1b[?1000h\x1b[?1006h");
+    } catch { /* ignore */ }
+    const onData = (buf: Uint8Array | string) => {
+      const s = typeof buf === "string" ? buf : new TextDecoder().decode(buf);
+      // Parse sequences like \x1b[<64;X;Y M (wheel up) or 65 (down)
+      const re = /\x1b\[<(\d+);(\d+);(\d+)([mM])/g;
+      let m: RegExpExecArray | null;
+      let delta = 0;
+      while ((m = re.exec(s))) {
+        const code = Number(m[1]);
+        if (code === 64) delta -= 3; // wheel up
+        else if (code === 65) delta += 3; // wheel down
+      }
+      if (delta !== 0) {
+        const next = clamp(offset + delta, 0, maxOffset);
+        onOffsetChange(next);
+      }
+    };
+    stdin.on("data", onData as any);
+    return () => {
+      try { stdin.off?.("data", onData as any); } catch { /* ignore */ }
+      try { process.stdout?.write?.("\x1b[?1000l\x1b[?1006l"); } catch { /* ignore */ }
+      try { setRawMode?.(false); } catch { /* ignore */ }
+    };
+  }, [stdin, isRawModeSupported, offset, maxOffset, onOffsetChange]);
 
   return (
     <Box flexDirection="column" height={rows} width={cols ?? undefined}>
