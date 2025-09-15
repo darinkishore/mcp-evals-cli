@@ -25,6 +25,7 @@
     "chalk": "npm:chalk@^5.3.0",
     "react": "npm:react@^19.1.1",
     "@cliffy/command": "jsr:@cliffy/command@1.0.0-rc.7",
-    "@std/path": "jsr:@std/path@^1.0.6"
+    "@std/path": "jsr:@std/path@^1.0.6",
+    "fullscreen-ink": "npm:fullscreen-ink@latest"
   }
 }
