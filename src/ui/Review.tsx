@@ -2,7 +2,7 @@ import { useEffect, useMemo, useReducer, useRef, useState } from "react";
 import { Box, Text, useApp, useInput } from "ink";
 import type { TraceBrowseItem } from "../types.ts";
 import { listTraces, postAsk, postFeedback } from "../api.ts";
-import { AskAnswer, CommandBar, Header, Issues, Requirements, TraceExcerpt } from "./index.ts";
+import { AskAnswer, CommandBar, Header, Issues, Requirements, TraceExcerpt, TranscriptView } from "./index.ts";
 import { compareForFailuresMode, matchesFailuresOnly } from "./reviewFilter.ts";
 import { icons } from "./theme.ts";
 
@@ -28,6 +28,8 @@ interface UIState {
   askAnswer: string | null;
   askVisible: boolean;
   showSummaries: boolean;
+  viewMode: "normal" | "transcript";
+  transcriptOffset: number;
 }
 
 type UIAction =
@@ -39,7 +41,9 @@ type UIAction =
   | { type: "SET_ASK_ANSWER"; value: string | null }
   | { type: "SET_ASK_VISIBLE"; value: boolean }
   | { type: "TOGGLE_ASK_VISIBLE" }
-  | { type: "TOGGLE_SUMMARIES" };
+  | { type: "TOGGLE_SUMMARIES" }
+  | { type: "SET_VIEW_MODE"; mode: "normal" | "transcript" }
+  | { type: "SET_TRANSCRIPT_OFFSET"; value: number };
 
 function uiReducer(state: UIState, action: UIAction): UIState {
   switch (action.type) {
@@ -61,6 +65,10 @@ function uiReducer(state: UIState, action: UIAction): UIState {
       return { ...state, askVisible: !state.askVisible };
     case "TOGGLE_SUMMARIES":
       return { ...state, showSummaries: !state.showSummaries };
+    case "SET_VIEW_MODE":
+      return { ...state, viewMode: action.mode };
+    case "SET_TRANSCRIPT_OFFSET":
+      return { ...state, transcriptOffset: action.value };
     default:
       return state;
   }
@@ -103,6 +111,8 @@ export default function ReviewApp(
     askAnswer: null,
     askVisible: true,
     showSummaries: true,
+    viewMode: "normal",
+    transcriptOffset: 0,
   } as UIState);
   const composeMode = ui.composeMode;
   const input = ui.draft;
@@ -146,6 +156,46 @@ export default function ReviewApp(
   }, []);
 
   useInput(async (inp, key) => {
+    // Global toggle for Transcript Mode
+    if (key.ctrl && (inp === "t" || inp === "T")) {
+      dispatch({ type: "SET_VIEW_MODE", mode: ui.viewMode === "transcript" ? "normal" : "transcript" });
+      return;
+    }
+
+    if (ui.viewMode === "transcript") {
+      const visibleRows = (rows ?? 24) - 3 - 1; // header + hints
+      const step = Math.max(1, Math.floor(visibleRows / 2));
+      const ch = (inp ?? "").toLowerCase();
+      if (ch === "q") { exit(); return; }
+      // Navigation between traces
+      if (key.rightArrow || (key.tab && !key.shift) || ch === "l") {
+        dispatch({ type: "SET_ASK_ANSWER", value: null });
+        dispatch({ type: "SET_NOTICE", value: null });
+        if (index < items.length - 1) setIndex(index + 1);
+        return;
+      }
+      if (key.leftArrow || (key.tab && key.shift) || ch === "h") {
+        dispatch({ type: "SET_ASK_ANSWER", value: null });
+        dispatch({ type: "SET_NOTICE", value: null });
+        if (index > 0) setIndex(index - 1);
+        return;
+      }
+      // Scroll transcript
+      if (key.downArrow || ch === "j") { dispatch({ type: "SET_TRANSCRIPT_OFFSET", value: ui.transcriptOffset + 1 }); return; }
+      if (key.upArrow || ch === "k") { dispatch({ type: "SET_TRANSCRIPT_OFFSET", value: Math.max(0, ui.transcriptOffset - 1) }); return; }
+      if (key.pageDown) { dispatch({ type: "SET_TRANSCRIPT_OFFSET", value: ui.transcriptOffset + step }); return; }
+      if (key.pageUp) { dispatch({ type: "SET_TRANSCRIPT_OFFSET", value: Math.max(0, ui.transcriptOffset - step) }); return; }
+      if (ch === "g") { dispatch({ type: "SET_TRANSCRIPT_OFFSET", value: 0 }); return; }
+      if (ch === "g" && key.shift) { /* unreachable via ch; ignore */ }
+      if (ch === "s") { dispatch({ type: "TOGGLE_SUMMARIES" }); return; }
+      // Disabled compose actions
+      if (ch === "?" || ch === "v" || key.return) {
+        dispatch({ type: "SET_NOTICE", value: "Exit transcript to compose" });
+        setTimeout(() => dispatch({ type: "SET_NOTICE", value: null }), 1200);
+        return;
+      }
+      return; // block other keys
+    }
     // If in Ask mode and backspace at empty input, return to Feedback
     if (composeMode === "ask" && isBackspace(inp, key) && input.length === 0) {
       dispatch({ type: "SET_COMPOSE_MODE", mode: "feedback" });
@@ -310,6 +360,20 @@ export default function ReviewApp(
     4,
     totalRows - reservedBottom - headerRows - verticalGaps,
   );
+
+  if (ui.viewMode === "transcript" && current) {
+    return (
+      <TranscriptView
+        t={current}
+        rows={totalRows}
+        cols={colsProp}
+        offset={ui.transcriptOffset}
+        onOffsetChange={(n) => dispatch({ type: "SET_TRANSCRIPT_OFFSET", value: n })}
+        showSummaries={showSummaries}
+        notice={notice ?? undefined}
+      />
+    );
+  }
 
   return (
     <Box flexDirection="column" height={totalRows} justifyContent="center">

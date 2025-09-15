@@ -6,4 +6,5 @@ export { default as TraceExcerpt } from "./TraceExcerpt.tsx";
 export { default as AskAnswer } from "./AskAnswer.tsx";
 export { default as InputControls } from "./InputControls.tsx";
 export { default as ReviewApp } from "./Review.tsx";
+export { default as TranscriptView } from "./TranscriptView.tsx";
 export { default as CommandBar } from "./CommandBar.tsx";
