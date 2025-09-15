@@ -2,7 +2,7 @@ import { useEffect, useMemo, useReducer, useRef, useState } from "react";
 import { Box, Text, useApp, useInput } from "ink";
 import type { TraceBrowseItem } from "../types.ts";
 import { listTraces, postAsk, postFeedback } from "../api.ts";
-import { AskAnswer, CommandBar, Header, TraceExcerpt, TranscriptView, BottomDetailsPane } from "./index.ts";
+import { AskAnswer, CommandBar, Header, TranscriptView, BottomDetailsPane } from "./index.ts";
 import { compareForFailuresMode, matchesFailuresOnly } from "./reviewFilter.ts";
 import { icons } from "./theme.ts";
 
@@ -404,10 +404,9 @@ export default function ReviewApp(
         {/* Top: full-width header */}
         <Header t={current} />
 
-        {/* Bottom: two boxes at the same height filling remaining space */}
-        <Box flexDirection="row" gap={2} flexGrow={1}>
-          {/* Left bottom box: Virtualized Review Details */}
-          <Box flexDirection="column" borderStyle="round" borderColor="cyan" paddingX={1} flexGrow={3} height={paneHeight}>
+        {/* Bottom: single full-width details pane (no inline trace) */}
+        <Box flexDirection="column" gap={0} flexGrow={1}>
+          <Box flexDirection="column" borderStyle="round" borderColor="cyan" paddingX={1} height={paneHeight}>
             <BottomDetailsPane
               issues={current.issues ?? []}
               requirements={current.requirements ?? []}
@@ -416,11 +415,6 @@ export default function ReviewApp(
               onOffsetChange={(n) => dispatch({ type: "SET_BOTTOM_OFFSET", value: n })}
               showSummaries={showSummaries}
             />
-          </Box>
-
-          {/* Right bottom box: Trace */}
-          <Box flexDirection="column" flexGrow={2}>
-            <TraceExcerpt messages={current.messages} height={paneHeight} />
           </Box>
         </Box>
 
