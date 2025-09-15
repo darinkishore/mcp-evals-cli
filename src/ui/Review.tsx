@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useReducer, useRef, useState } from "react";
 import { Box, Text, useApp, useInput } from "ink";
 import type { TraceBrowseItem } from "../types.ts";
 import { listTraces, postAsk, postFeedback } from "../api.ts";
@@ -19,6 +19,52 @@ function isBackspace(inp: string, key: any): boolean {
 }
 
 type ComposeMode = "feedback" | "ask";
+
+interface UIState {
+  composeMode: ComposeMode;
+  draft: string;
+  confirmDiscard: boolean;
+  notice: string | null;
+  askAnswer: string | null;
+  askVisible: boolean;
+  showSummaries: boolean;
+}
+
+type UIAction =
+  | { type: "SET_COMPOSE_MODE"; mode: ComposeMode }
+  | { type: "SET_DRAFT"; value: string }
+  | { type: "CLEAR_DRAFT" }
+  | { type: "SET_CONFIRM_DISCARD"; value: boolean }
+  | { type: "SET_NOTICE"; value: string | null }
+  | { type: "SET_ASK_ANSWER"; value: string | null }
+  | { type: "SET_ASK_VISIBLE"; value: boolean }
+  | { type: "TOGGLE_ASK_VISIBLE" }
+  | { type: "TOGGLE_SUMMARIES" };
+
+function uiReducer(state: UIState, action: UIAction): UIState {
+  switch (action.type) {
+    case "SET_COMPOSE_MODE":
+      return { ...state, composeMode: action.mode };
+    case "SET_DRAFT":
+      return { ...state, draft: action.value };
+    case "CLEAR_DRAFT":
+      return { ...state, draft: "" };
+    case "SET_CONFIRM_DISCARD":
+      return { ...state, confirmDiscard: action.value };
+    case "SET_NOTICE":
+      return { ...state, notice: action.value };
+    case "SET_ASK_ANSWER":
+      return { ...state, askAnswer: action.value };
+    case "SET_ASK_VISIBLE":
+      return { ...state, askVisible: action.value };
+    case "TOGGLE_ASK_VISIBLE":
+      return { ...state, askVisible: !state.askVisible };
+    case "TOGGLE_SUMMARIES":
+      return { ...state, showSummaries: !state.showSummaries };
+    default:
+      return state;
+  }
+}
 
 interface ReviewProps {
   rows?: number;
@@ -48,17 +94,27 @@ export default function ReviewApp(
   const current: TraceBrowseItem | null = items.length
     ? items[Math.max(0, Math.min(index, items.length - 1))]
     : null;
-  // Compose state (global-ish within this viewer): default to feedback
-  const [composeMode, setComposeMode] = useState<ComposeMode>("feedback");
-  const [input, setInput] = useState("");
-  const [justSwitchedToAsk, setJustSwitchedToAsk] = useState(false);
-  const [confirmDiscard, setConfirmDiscard] = useState(false);
-  const [notice, setNotice] = useState<string | null>(null);
-  const [askAnswer, setAskAnswer] = useState<string | null>(null);
-  const [askVisible, setAskVisible] = useState<boolean>(true);
+  // Centralized UI state
+  const [ui, dispatch] = useReducer(uiReducer, {
+    composeMode: "feedback",
+    draft: "",
+    confirmDiscard: false,
+    notice: null,
+    askAnswer: null,
+    askVisible: true,
+    showSummaries: true,
+  } as UIState);
+  const composeMode = ui.composeMode;
+  const input = ui.draft;
+  const confirmDiscard = ui.confirmDiscard;
+  const notice = ui.notice;
+  const askAnswer = ui.askAnswer;
+  const askVisible = ui.askVisible;
   const [offset, setOffset] = useState(0);
   const [total, setTotal] = useState<number | null>(null);
-  const [showSummaries, setShowSummaries] = useState(true);
+  // showSummaries comes from ui state
+  const showSummaries = ui.showSummaries;
+  const justSwitchedToAskRef = useRef(false);
   const pageSize = 25;
 
   useEffect(() => {
@@ -66,8 +122,8 @@ export default function ReviewApp(
     async function loadInitial() {
       setLoading(true);
       setError(null);
-      setAskAnswer(null);
-      setNotice(null);
+      dispatch({ type: "SET_ASK_ANSWER", value: null });
+      dispatch({ type: "SET_NOTICE", value: null });
       try {
         const res = await listTraces(0, pageSize);
         if (cancelled) return;
@@ -91,8 +147,8 @@ export default function ReviewApp(
   useInput(async (inp, key) => {
     // If in Ask mode and backspace at empty input, return to Feedback
     if (composeMode === "ask" && isBackspace(inp, key) && input.length === 0) {
-      setComposeMode("feedback");
-      setConfirmDiscard(false);
+      dispatch({ type: "SET_COMPOSE_MODE", mode: "feedback" });
+      dispatch({ type: "SET_CONFIRM_DISCARD", value: false });
       return;
     }
 
@@ -102,17 +158,17 @@ export default function ReviewApp(
       // Handle discard confirmation
       if (key.escape) {
         if (!confirmDiscard) {
-          setConfirmDiscard(true);
+          dispatch({ type: "SET_CONFIRM_DISCARD", value: true });
         } else {
           // confirmed discard
-          setInput("");
-          setConfirmDiscard(false);
+          dispatch({ type: "CLEAR_DRAFT" });
+          dispatch({ type: "SET_CONFIRM_DISCARD", value: false });
         }
         return;
       }
       if (key.return) {
         // keep draft; cancel discard prompt if showing
-        if (confirmDiscard) setConfirmDiscard(false);
+        if (confirmDiscard) dispatch({ type: "SET_CONFIRM_DISCARD", value: false });
         return; // onSubmit handled by TextInput
       }
       // Swallow other keys (let TextInput handle printable keys)
@@ -159,27 +215,25 @@ export default function ReviewApp(
       }
     } else if (key.leftArrow || (key.tab && key.shift)) {
       // Previous item (viewer)
-      setAskAnswer(null);
-      setNotice(null);
+      dispatch({ type: "SET_ASK_ANSWER", value: null });
+      dispatch({ type: "SET_NOTICE", value: null });
       if (index > 0) setIndex(index - 1);
     } else if (ch === "?" || inp === "?") {
-      setComposeMode("ask");
-      setJustSwitchedToAsk(true);
-      setInput("");
+      dispatch({ type: "SET_COMPOSE_MODE", mode: "ask" });
+      justSwitchedToAskRef.current = true;
+      dispatch({ type: "CLEAR_DRAFT" });
     } else if ((ch === "v" || ch === "V") && askAnswer) {
       // Toggle ask answer visibility; cancel any pending auto-hide
-      setAskVisible((v) => v === false ? true : false);
+      dispatch({ type: "TOGGLE_ASK_VISIBLE" });
       return;
     } else if (ch === "s") {
-      setShowSummaries(!showSummaries);
-      setNotice(
-        showSummaries ? "Showing full descriptions" : "Showing summaries",
-      );
+      dispatch({ type: "TOGGLE_SUMMARIES" });
+      dispatch({ type: "SET_NOTICE", value: showSummaries ? "Showing full descriptions" : "Showing summaries" });
     }
   });
 
   const clearNoticeSoon = () => {
-    setTimeout(() => setNotice(null), 1500);
+    setTimeout(() => dispatch({ type: "SET_NOTICE", value: null }), 1500);
   };
 
   const onSubmitAsk = async (text?: string) => {
@@ -188,11 +242,11 @@ export default function ReviewApp(
     if (!q) return;
     try {
       const ans = await postAsk(current.trace_id, q);
-      setAskAnswer(ans.answer);
-      setAskVisible(true);
+      dispatch({ type: "SET_ASK_ANSWER", value: ans.answer });
+      dispatch({ type: "SET_ASK_VISIBLE", value: true });
       // Auto-hide the answer after 20s
       try {
-        const timer = setTimeout(() => setAskVisible(false), 20_000);
+        const timer = setTimeout(() => dispatch({ type: "SET_ASK_VISIBLE", value: false }), 20_000);
         // store timer id via closure; avoid keeping reference across rerenders
         (globalThis as any).__ask_timer && clearTimeout((globalThis as any).__ask_timer);
         (globalThis as any).__ask_timer = timer;
@@ -200,9 +254,9 @@ export default function ReviewApp(
     } catch (e) {
       setError((e as Error).message);
     } finally {
-      setInput("");
-      setComposeMode("feedback"); // return to default
-      setConfirmDiscard(false);
+      dispatch({ type: "CLEAR_DRAFT" });
+      dispatch({ type: "SET_COMPOSE_MODE", mode: "feedback" });
+      dispatch({ type: "SET_CONFIRM_DISCARD", value: false });
     }
   };
 
@@ -212,13 +266,13 @@ export default function ReviewApp(
     if (!fb) return;
     try {
       await postFeedback(current.trace_id, fb);
-      setNotice("Noted.");
+      dispatch({ type: "SET_NOTICE", value: "Noted." });
       clearNoticeSoon();
     } catch (e) {
       setError((e as Error).message);
     } finally {
-      setInput("");
-      setConfirmDiscard(false);
+      dispatch({ type: "CLEAR_DRAFT" });
+      dispatch({ type: "SET_CONFIRM_DISCARD", value: false });
     }
   };
 
@@ -299,14 +353,19 @@ export default function ReviewApp(
           value={input}
           setValue={(v) => {
             // If we just switched to ask via '?' and the input captured a stray '?', drop it
-            if (justSwitchedToAsk && v === "?") {
-              setInput("");
-              setJustSwitchedToAsk(false);
+            if (justSwitchedToAskRef.current && v === "?") {
+              dispatch({ type: "SET_DRAFT", value: "" });
+              justSwitchedToAskRef.current = false;
               return;
             }
-            setJustSwitchedToAsk(false);
-            setInput(v);
-            if (confirmDiscard) setConfirmDiscard(false);
+            justSwitchedToAskRef.current = false;
+            // Drop stray tabs that may leak from TextInput when empty
+            if (v === "\t") {
+              dispatch({ type: "SET_DRAFT", value: "" });
+            } else {
+              dispatch({ type: "SET_DRAFT", value: v });
+            }
+            if (confirmDiscard) dispatch({ type: "SET_CONFIRM_DISCARD", value: false });
           }}
           onSubmitAsk={(t) => onSubmitAsk(t)}
           onSubmitFeedback={(t) => onSubmitFeedback(t)}
