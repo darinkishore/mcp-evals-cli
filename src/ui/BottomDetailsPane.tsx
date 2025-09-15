@@ -1,6 +1,7 @@
 import { Box, Text } from "ink";
 import type { ReviewIssue, ReviewRequirement } from "../types.ts";
 import type { ReactNode } from "react";
+import { useEffect } from "react";
 
 interface BottomDetailsPaneProps {
   issues: ReviewIssue[];
@@ -83,7 +84,11 @@ export default function BottomDetailsPane({
   const maxOffset = Math.max(0, contentRows - height);
   const start = clamp(offset, 0, maxOffset);
   const end = Math.min(lines.length, start + height);
-  if (start !== offset) onOffsetChange(start);
+  // Defer parent offset correction to an effect to avoid update-in-render loops
+  useEffect(() => {
+    if (start !== offset) onOffsetChange(start);
+    // Only depend on computed start/offset; height/content changes recompute start
+  }, [start, offset]);
 
   const overflowTop = start > 0;
   const overflowBottom = end < lines.length;
@@ -99,4 +104,3 @@ export default function BottomDetailsPane({
     </Box>
   );
 }
-
