@@ -20,12 +20,12 @@
   "imports": {
     "@std/assert": "jsr:@std/assert@^1.0.14",
     "@types/react": "npm:@types/react@^19.1.12",
-    "ink": "npm:ink@^6.2.3",
+    "ink": "npm:ink@^6.3.0",
     "ink-text-input": "npm:ink-text-input@^6.0.0",
     "chalk": "npm:chalk@^5.3.0",
     "react": "npm:react@^19.1.1",
     "@cliffy/command": "jsr:@cliffy/command@1.0.0-rc.7",
     "@std/path": "jsr:@std/path@^1.0.6",
-    "fullscreen-ink": "https://esm.sh/gh/DaniGuardiola/fullscreen-ink"
+    "fullscreen-ink": "https://esm.sh/gh/DaniGuardiola/fullscreen-ink?external=react,react/jsx-runtime,ink"
   }
 }

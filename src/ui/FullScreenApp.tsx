@@ -12,15 +12,11 @@ export default function FullScreenApp(
 ) {
   const { width, height } = useScreenSize();
 
-  // Outer Box sized to full terminal; expand to full width by default
+  // Let fullscreen-ink's FullScreenBox control size; we just flex-grow
   return (
-    <Box width={width} height={height} flexDirection="column">
-      <Box width={width} flexGrow={1} flexDirection="column">
-        <ReviewApp
-          rows={height}
-          cols={width}
-          failuresOnly={failuresOnly}
-        />
+    <Box flexDirection="column" flexGrow={1}>
+      <Box flexGrow={1} flexDirection="column">
+        <ReviewApp rows={height} cols={width} failuresOnly={failuresOnly} />
       </Box>
     </Box>
   );
