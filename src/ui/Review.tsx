@@ -2,7 +2,7 @@ import { useEffect, useMemo, useReducer, useRef, useState } from "react";
 import { Box, Text, useApp, useInput } from "ink";
 import type { TraceBrowseItem } from "../types.ts";
 import { listTraces, postAsk, postFeedback } from "../api.ts";
-import { AskAnswer, CommandBar, Header, Issues, Requirements, TraceExcerpt, TranscriptView } from "./index.ts";
+import { AskAnswer, CommandBar, Header, TraceExcerpt, TranscriptView, BottomDetailsPane } from "./index.ts";
 import { compareForFailuresMode, matchesFailuresOnly } from "./reviewFilter.ts";
 import { icons } from "./theme.ts";
 
@@ -30,6 +30,7 @@ interface UIState {
   showSummaries: boolean;
   viewMode: "normal" | "transcript";
   transcriptOffset: number;
+  bottomOffset: number;
 }
 
 type UIAction =
@@ -43,7 +44,8 @@ type UIAction =
   | { type: "TOGGLE_ASK_VISIBLE" }
   | { type: "TOGGLE_SUMMARIES" }
   | { type: "SET_VIEW_MODE"; mode: "normal" | "transcript" }
-  | { type: "SET_TRANSCRIPT_OFFSET"; value: number };
+  | { type: "SET_TRANSCRIPT_OFFSET"; value: number }
+  | { type: "SET_BOTTOM_OFFSET"; value: number };
 
 function uiReducer(state: UIState, action: UIAction): UIState {
   switch (action.type) {
@@ -69,6 +71,8 @@ function uiReducer(state: UIState, action: UIAction): UIState {
       return { ...state, viewMode: action.mode };
     case "SET_TRANSCRIPT_OFFSET":
       return { ...state, transcriptOffset: action.value };
+    case "SET_BOTTOM_OFFSET":
+      return { ...state, bottomOffset: action.value };
     default:
       return state;
   }
@@ -113,6 +117,7 @@ export default function ReviewApp(
     showSummaries: true,
     viewMode: "normal",
     transcriptOffset: 0,
+    bottomOffset: 0,
   } as UIState);
   const composeMode = ui.composeMode;
   const input = ui.draft;
@@ -269,6 +274,24 @@ export default function ReviewApp(
       dispatch({ type: "SET_ASK_ANSWER", value: null });
       dispatch({ type: "SET_NOTICE", value: null });
       if (index > 0) setIndex(index - 1);
+    } else if (key.downArrow || ch === "j") {
+      // Scroll bottom details pane
+      dispatch({ type: "SET_BOTTOM_OFFSET", value: ui.bottomOffset + 1 });
+      return;
+    } else if (key.upArrow || ch === "k") {
+      dispatch({ type: "SET_BOTTOM_OFFSET", value: Math.max(0, ui.bottomOffset - 1) });
+      return;
+    } else if (key.pageDown) {
+      const step = Math.max(3, Math.floor((rows ?? 24) / 4));
+      dispatch({ type: "SET_BOTTOM_OFFSET", value: ui.bottomOffset + step });
+      return;
+    } else if (key.pageUp) {
+      const step = Math.max(3, Math.floor((rows ?? 24) / 4));
+      dispatch({ type: "SET_BOTTOM_OFFSET", value: Math.max(0, ui.bottomOffset - step) });
+      return;
+    } else if (ch === "g") {
+      dispatch({ type: "SET_BOTTOM_OFFSET", value: 0 });
+      return;
     } else if (ch === "?" || inp === "?") {
       dispatch({ type: "SET_COMPOSE_MODE", mode: "ask" });
       justSwitchedToAskRef.current = true;
@@ -331,7 +354,7 @@ export default function ReviewApp(
 
   const controls = useMemo(() => (
     <Text>
-      [←] prev [→] next [Tab] next [Shift+Tab] prev [?]ask [q]uit{failuresOnly
+      [←] prev [→] next [Tab] next [Shift+Tab] prev  [↑/↓ PgUp/PgDn] scroll  [?]ask [q]uit{failuresOnly
         ? "   (Filtered: failures only)"
         : ""}
       {showSummaries ? "   (Summaries)" : "   (Full)"}
@@ -383,22 +406,16 @@ export default function ReviewApp(
 
         {/* Bottom: two boxes at the same height filling remaining space */}
         <Box flexDirection="row" gap={2} flexGrow={1}>
-          {/* Left bottom box: Review Details (Issues first per spec) */}
-          <Box
-            flexDirection="column"
-            borderStyle="round"
-            borderColor="cyan"
-            paddingX={1}
-            flexGrow={3}
-            height={paneHeight}
-          >
-            <Text>{icons.details}</Text>
-            <Issues
+          {/* Left bottom box: Virtualized Review Details */}
+          <Box flexDirection="column" borderStyle="round" borderColor="cyan" paddingX={1} flexGrow={3} height={paneHeight}>
+            <BottomDetailsPane
               issues={current.issues ?? []}
-              boxed={false}
+              requirements={current.requirements ?? []}
+              height={paneHeight}
+              offset={ui.bottomOffset}
+              onOffsetChange={(n) => dispatch({ type: "SET_BOTTOM_OFFSET", value: n })}
               showSummaries={showSummaries}
             />
-            <Requirements requirements={current.requirements ?? []} />
           </Box>
 
           {/* Right bottom box: Trace */}
