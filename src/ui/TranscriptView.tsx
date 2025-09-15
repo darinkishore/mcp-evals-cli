@@ -192,7 +192,7 @@ export default function TranscriptView({ t, rows, cols, offset, onOffsetChange, 
       {/* Scrollable content window */}
       <Box flexDirection="column" height={visible}>
         {lines.slice(start, end).map((el, i) => (
-          <Box key={i}>{el}</Box>
+          <Box key={`row-${start + i}`}>{el}</Box>
         ))}
       </Box>
 
