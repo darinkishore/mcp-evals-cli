@@ -2,18 +2,23 @@ import { useEffect, useMemo, useState } from "react";
 import { Box, Text, useApp, useInput } from "ink";
 import type { TraceBrowseItem } from "../types.ts";
 import { listTraces, postAsk, postFeedback } from "../api.ts";
-import {
-  AskAnswer,
-  Header,
-  InputControls,
-  Issues,
-  Requirements,
-  TraceExcerpt,
-} from "./index.ts";
+import { AskAnswer, CommandBar, Header, Issues, Requirements, TraceExcerpt } from "./index.ts";
 import { compareForFailuresMode, matchesFailuresOnly } from "./reviewFilter.ts";
 import { icons } from "./theme.ts";
 
-type Mode = "idle" | "ask" | "feedback";
+function isBackspace(inp: string, key: any): boolean {
+  // Handle various backspace/delete signals across terminals
+  // - key.backspace (if provided by Ink)
+  // - key.delete (some terminals map backspace to delete)
+  // - ASCII BS (\b) and DEL (\x7f)
+  // - Ctrl+H (common backspace mapping)
+  if (key?.backspace || key?.delete) return true;
+  if (inp === "\b" || inp === "\x7f") return true;
+  if (key?.ctrl && inp?.toLowerCase() === "h") return true;
+  return false;
+}
+
+type ComposeMode = "feedback" | "ask";
 
 interface ReviewProps {
   rows?: number;
@@ -22,7 +27,7 @@ interface ReviewProps {
 }
 
 export default function ReviewApp(
-  { rows, cols: _cols, failuresOnly = false }: ReviewProps,
+  { rows, cols: colsProp, failuresOnly = false }: ReviewProps,
 ) {
   const { exit } = useApp();
   const [loading, setLoading] = useState(true);
@@ -43,10 +48,13 @@ export default function ReviewApp(
   const current: TraceBrowseItem | null = items.length
     ? items[Math.max(0, Math.min(index, items.length - 1))]
     : null;
-  const [mode, setMode] = useState<Mode>("idle");
-  const [askAnswer, setAskAnswer] = useState<string | null>(null);
-  const [notice, setNotice] = useState<string | null>(null);
+  // Compose state (global-ish within this viewer): default to feedback
+  const [composeMode, setComposeMode] = useState<ComposeMode>("feedback");
   const [input, setInput] = useState("");
+  const [justSwitchedToAsk, setJustSwitchedToAsk] = useState(false);
+  const [confirmDiscard, setConfirmDiscard] = useState(false);
+  const [notice, setNotice] = useState<string | null>(null);
+  const [askAnswer, setAskAnswer] = useState<string | null>(null);
   const [offset, setOffset] = useState(0);
   const [total, setTotal] = useState<number | null>(null);
   const [showSummaries, setShowSummaries] = useState(true);
@@ -80,16 +88,41 @@ export default function ReviewApp(
   }, []);
 
   useInput(async (inp, key) => {
-    if (mode !== "idle") return; // handled by input field
-    if (key.escape) {
-      setMode("idle");
-      setInput("");
+    // If in Ask mode and backspace at empty input, return to Feedback
+    if (composeMode === "ask" && isBackspace(inp, key) && input.length === 0) {
+      setComposeMode("feedback");
+      setConfirmDiscard(false);
       return;
     }
+
+    // Compose capture rules: when there's text, ignore nav keys except Esc/Enter flow
+    const hasDraft = input.trim().length > 0;
+    if (hasDraft) {
+      // Handle discard confirmation
+      if (key.escape) {
+        if (!confirmDiscard) {
+          setConfirmDiscard(true);
+        } else {
+          // confirmed discard
+          setInput("");
+          setConfirmDiscard(false);
+        }
+        return;
+      }
+      if (key.return) {
+        // keep draft; cancel discard prompt if showing
+        if (confirmDiscard) setConfirmDiscard(false);
+        return; // onSubmit handled by TextInput
+      }
+      // Swallow other keys (let TextInput handle printable keys)
+      return;
+    }
+
+    // When no draft, allow global nav + quick mode switches
     const ch = inp.toLowerCase();
     if (ch === "q") {
       exit();
-    } else if (ch === "l" || key.rightArrow) {
+    } else if (key.rightArrow || (key.tab && !key.shift)) {
       // Next item (viewer)
       setAskAnswer(null);
       setNotice(null);
@@ -123,16 +156,14 @@ export default function ReviewApp(
       } finally {
         setLoading(false);
       }
-    } else if (ch === "h" || key.leftArrow) {
+    } else if (key.leftArrow || (key.tab && key.shift)) {
       // Previous item (viewer)
       setAskAnswer(null);
       setNotice(null);
       if (index > 0) setIndex(index - 1);
-    } else if (ch === "a") {
-      setMode("ask");
-      setInput("");
-    } else if (ch === "f") {
-      setMode("feedback");
+    } else if (ch === "?" || inp === "?") {
+      setComposeMode("ask");
+      setJustSwitchedToAsk(true);
       setInput("");
     } else if (ch === "s") {
       setShowSummaries(!showSummaries);
@@ -142,39 +173,45 @@ export default function ReviewApp(
     }
   });
 
-  const onSubmitAsk = async () => {
+  const clearNoticeSoon = () => {
+    setTimeout(() => setNotice(null), 1500);
+  };
+
+  const onSubmitAsk = async (text?: string) => {
     if (!current) return;
-    const q = input.trim();
-    if (!q) return setMode("idle");
+    const q = (text ?? input).trim();
+    if (!q) return;
     try {
       const ans = await postAsk(current.trace_id, q);
       setAskAnswer(ans.answer);
     } catch (e) {
       setError((e as Error).message);
     } finally {
-      setMode("idle");
       setInput("");
+      setComposeMode("feedback"); // return to default
+      setConfirmDiscard(false);
     }
   };
 
-  const onSubmitFeedback = async () => {
+  const onSubmitFeedback = async (text?: string) => {
     if (!current) return;
-    const fb = input.trim();
-    if (!fb) return setMode("idle");
+    const fb = (text ?? input).trim();
+    if (!fb) return;
     try {
       await postFeedback(current.trace_id, fb);
-      setNotice("✓ Feedback recorded");
+      setNotice("Noted.");
+      clearNoticeSoon();
     } catch (e) {
       setError((e as Error).message);
     } finally {
-      setMode("idle");
       setInput("");
+      setConfirmDiscard(false);
     }
   };
 
   const controls = useMemo(() => (
     <Text>
-      [H] prev [L] next [s]ummary [f]eedback [a]sk [q]uit{failuresOnly
+      [←] prev [→] next [Tab] next [Shift+Tab] prev [?]ask [q]uit{failuresOnly
         ? "   (Filtered: failures only)"
         : ""}
       {showSummaries ? "   (Summaries)" : "   (Full)"}
@@ -187,9 +224,16 @@ export default function ReviewApp(
 
   // Approximate visible height for the content panes
   const totalRows = rows ?? 24;
-  const reservedBottom = 6; // space for ask/notice/controls
+  // Dynamically reserve space for the bottom area to avoid collapsing the command bar
+  const askLines = askAnswer ? (askAnswer.split("\n").length + 3) : 0; // rough: 1 title + content + 2 border lines
+  const cmdBarLines = 3; // top rule, input row, bottom rule
+  const controlsLines = 1;
+  const noticeLines = notice ? 1 : 0;
+  const desiredReserved = cmdBarLines + controlsLines + noticeLines + askLines;
   const headerRows = 5; // approx: boxed header with 3 lines + borders
   const verticalGaps = 2; // gaps between sections
+  const maxReserved = Math.max(0, totalRows - headerRows - verticalGaps - 4);
+  const reservedBottom = Math.min(maxReserved, Math.max(5, desiredReserved));
   const paneHeight = Math.max(
     4,
     totalRows - reservedBottom - headerRows - verticalGaps,
@@ -203,7 +247,7 @@ export default function ReviewApp(
 
         {/* Bottom: two boxes at the same height filling remaining space */}
         <Box flexDirection="row" gap={2} flexGrow={1}>
-          {/* Left bottom box: Review Details */}
+          {/* Left bottom box: Review Details (Issues first per spec) */}
           <Box
             flexDirection="column"
             borderStyle="round"
@@ -213,12 +257,12 @@ export default function ReviewApp(
             height={paneHeight}
           >
             <Text>{icons.details}</Text>
-            <Requirements requirements={current.requirements ?? []} />
             <Issues
               issues={current.issues ?? []}
               boxed={false}
               showSummaries={showSummaries}
             />
+            <Requirements requirements={current.requirements ?? []} />
           </Box>
 
           {/* Right bottom box: Trace */}
@@ -227,18 +271,32 @@ export default function ReviewApp(
           </Box>
         </Box>
 
-        {/* Footer: ask/answer, notices, and controls */}
+        {/* Footer: pinned ask answer (Phase 1: simple card) */}
         {askAnswer && <AskAnswer askAnswer={askAnswer} />}
 
-        {notice && <Text color="green">{notice}</Text>}
+        {/* Controls hint */}
+        {controls}
 
-        <InputControls
-          mode={mode}
-          input={input}
-          setInput={setInput}
-          onSubmitAsk={onSubmitAsk}
-          onSubmitFeedback={onSubmitFeedback}
-          controls={controls}
+        {/* Persistent command bar */}
+        <CommandBar
+          cols={colsProp}
+          mode={composeMode}
+          value={input}
+          setValue={(v) => {
+            // If we just switched to ask via '?' and the input captured a stray '?', drop it
+            if (justSwitchedToAsk && v === "?") {
+              setInput("");
+              setJustSwitchedToAsk(false);
+              return;
+            }
+            setJustSwitchedToAsk(false);
+            setInput(v);
+            if (confirmDiscard) setConfirmDiscard(false);
+          }}
+          onSubmitAsk={(t) => onSubmitAsk(t)}
+          onSubmitFeedback={(t) => onSubmitFeedback(t)}
+          message={notice}
+          confirmDiscard={confirmDiscard}
         />
       </Box>
     </Box>
