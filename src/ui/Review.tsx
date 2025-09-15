@@ -131,6 +131,7 @@ export default function ReviewApp(
   const showSummaries = ui.showSummaries;
   const justSwitchedToAskRef = useRef(false);
   const justToggledVRef = useRef(false);
+  const justToggledSRef = useRef(false);
   const pageSize = 25;
 
   useEffect(() => {
@@ -302,9 +303,12 @@ export default function ReviewApp(
       // Swallow the literal 'v'/'V' that TextInput may capture when empty
       justToggledVRef.current = true;
       return;
-    } else if (ch === "s") {
+    } else if (ch === "s" || ch === "S") {
       dispatch({ type: "TOGGLE_SUMMARIES" });
       dispatch({ type: "SET_NOTICE", value: showSummaries ? "Showing full descriptions" : "Showing summaries" });
+      // Swallow a stray 's' that TextInput may capture when empty
+      justToggledSRef.current = true;
+      return;
     }
   });
 
@@ -444,6 +448,10 @@ export default function ReviewApp(
               // Swallow a lone 'v' captured by TextInput when we toggled visibility
               dispatch({ type: "SET_DRAFT", value: "" });
               justToggledVRef.current = false;
+            } else if (justToggledSRef.current && (v === "s" || v === "S")) {
+              // Swallow a lone 's' captured when toggling summaries
+              dispatch({ type: "SET_DRAFT", value: "" });
+              justToggledSRef.current = false;
             } else {
               dispatch({ type: "SET_DRAFT", value: v });
             }
