@@ -55,6 +55,7 @@ export default function ReviewApp(
   const [confirmDiscard, setConfirmDiscard] = useState(false);
   const [notice, setNotice] = useState<string | null>(null);
   const [askAnswer, setAskAnswer] = useState<string | null>(null);
+  const [askVisible, setAskVisible] = useState<boolean>(true);
   const [offset, setOffset] = useState(0);
   const [total, setTotal] = useState<number | null>(null);
   const [showSummaries, setShowSummaries] = useState(true);
@@ -96,7 +97,7 @@ export default function ReviewApp(
     }
 
     // Compose capture rules: when there's text, ignore nav keys except Esc/Enter flow
-    const hasDraft = input.trim().length > 0;
+    const hasDraft = input.length > 0;
     if (hasDraft) {
       // Handle discard confirmation
       if (key.escape) {
@@ -165,6 +166,10 @@ export default function ReviewApp(
       setComposeMode("ask");
       setJustSwitchedToAsk(true);
       setInput("");
+    } else if ((ch === "v" || ch === "V") && askAnswer) {
+      // Toggle ask answer visibility; cancel any pending auto-hide
+      setAskVisible((v) => v === false ? true : false);
+      return;
     } else if (ch === "s") {
       setShowSummaries(!showSummaries);
       setNotice(
@@ -184,6 +189,14 @@ export default function ReviewApp(
     try {
       const ans = await postAsk(current.trace_id, q);
       setAskAnswer(ans.answer);
+      setAskVisible(true);
+      // Auto-hide the answer after 20s
+      try {
+        const timer = setTimeout(() => setAskVisible(false), 20_000);
+        // store timer id via closure; avoid keeping reference across rerenders
+        (globalThis as any).__ask_timer && clearTimeout((globalThis as any).__ask_timer);
+        (globalThis as any).__ask_timer = timer;
+      } catch { /* ignore */ }
     } catch (e) {
       setError((e as Error).message);
     } finally {
@@ -225,7 +238,9 @@ export default function ReviewApp(
   // Approximate visible height for the content panes
   const totalRows = rows ?? 24;
   // Dynamically reserve space for the bottom area to avoid collapsing the command bar
-  const askLines = askAnswer ? (askAnswer.split("\n").length + 3) : 0; // rough: 1 title + content + 2 border lines
+  const askLines = askAnswer
+    ? (askVisible ? (askAnswer.split("\n").length + 3) : 1)
+    : 0; // stub is 1 line when hidden
   const cmdBarLines = 3; // top rule, input row, bottom rule
   const controlsLines = 1;
   const noticeLines = notice ? 1 : 0;
@@ -272,7 +287,7 @@ export default function ReviewApp(
         </Box>
 
         {/* Footer: pinned ask answer (Phase 1: simple card) */}
-        {askAnswer && <AskAnswer askAnswer={askAnswer} />}
+        {askAnswer && <AskAnswer askAnswer={askAnswer} visible={askVisible} />}
 
         {/* Controls hint */}
         {controls}
