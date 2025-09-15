@@ -154,7 +154,7 @@ export default function ReviewApp(
     }
 
     // Compose capture rules: when there's text, ignore nav keys except Esc/Enter flow
-    const hasDraft = input.length > 0;
+    const hasDraft = input.trim().length > 0;
     if (hasDraft) {
       // Handle discard confirmation
       if (key.escape) {
