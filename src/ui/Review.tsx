@@ -115,6 +115,7 @@ export default function ReviewApp(
   // showSummaries comes from ui state
   const showSummaries = ui.showSummaries;
   const justSwitchedToAskRef = useRef(false);
+  const justToggledVRef = useRef(false);
   const pageSize = 25;
 
   useEffect(() => {
@@ -181,15 +182,15 @@ export default function ReviewApp(
       exit();
     } else if (key.rightArrow || (key.tab && !key.shift)) {
       // Next item (viewer)
-      setAskAnswer(null);
-      setNotice(null);
+      dispatch({ type: "SET_ASK_ANSWER", value: null });
+      dispatch({ type: "SET_NOTICE", value: null });
       if (index < items.length - 1) {
         setIndex(index + 1);
         return;
       }
       // Need to fetch more if available
       if (total !== null && offset >= total) {
-        setNotice("End of list");
+        dispatch({ type: "SET_NOTICE", value: "End of list" });
         return;
       }
       try {
@@ -206,7 +207,7 @@ export default function ReviewApp(
         if (index < newView.length - 1) {
           setIndex(index + 1);
         } else if (total !== null && (res.offset + res.items.length) >= total) {
-          setNotice("End of list");
+          dispatch({ type: "SET_NOTICE", value: "End of list" });
         }
       } catch (e) {
         setError((e as Error).message);
@@ -225,6 +226,8 @@ export default function ReviewApp(
     } else if ((ch === "v" || ch === "V") && askAnswer) {
       // Toggle ask answer visibility; cancel any pending auto-hide
       dispatch({ type: "TOGGLE_ASK_VISIBLE" });
+      // Swallow the literal 'v'/'V' that TextInput may capture when empty
+      justToggledVRef.current = true;
       return;
     } else if (ch === "s") {
       dispatch({ type: "TOGGLE_SUMMARIES" });
@@ -362,6 +365,10 @@ export default function ReviewApp(
             // Drop stray tabs that may leak from TextInput when empty
             if (v === "\t") {
               dispatch({ type: "SET_DRAFT", value: "" });
+            } else if (justToggledVRef.current && (v === "v" || v === "V")) {
+              // Swallow a lone 'v' captured by TextInput when we toggled visibility
+              dispatch({ type: "SET_DRAFT", value: "" });
+              justToggledVRef.current = false;
             } else {
               dispatch({ type: "SET_DRAFT", value: v });
             }
