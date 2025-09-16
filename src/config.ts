@@ -115,9 +115,9 @@ export async function resolveEvalAuth(
   const envApiKey = Deno.env.get("EVAL_API_KEY") || undefined;
   let apiKey = cfg.evalApiKey ?? envApiKey;
   if (!apiKey) {
-    throw new Error(
-      "Backend API key not configured. Run `evals config set evalApiKey <key>` or export EVAL_API_KEY.",
-    );
+    const input = prompt("No backend API key found. Enter API key:") ?? "";
+    apiKey = input.trim();
+    if (!apiKey) throw new Error("Backend API key is required");
   }
 
   const envWorkspaceId = Deno.env.get("EVAL_WORKSPACE_ID") || undefined;
@@ -125,37 +125,6 @@ export async function resolveEvalAuth(
   if (workspaceId) workspaceId = workspaceId.trim();
   if (workspaceId === "") workspaceId = undefined;
 
-  if (requireWorkspace && !workspaceId) {
-    throw new Error(
-      "No workspace selected. Use `evals workspace use <workspace-id>` or set EVAL_WORKSPACE_ID.",
-    );
-  }
-
-  return { apiKey, workspaceId };
-}
-
-export async function updateConfig(partial: Partial<EvalConfig>): Promise<void> {
-  const current = await readConfig();
-  await writeConfig({ ...current, ...partial });
-}
-
-export async function resolveEvalAuth(
-  options?: { requireWorkspace?: boolean },
-): Promise<{ apiKey: string; workspaceId?: string }> {
-  const requireWorkspace = options?.requireWorkspace ?? true;
-  const envApiKey = Deno.env.get("EVAL_API_KEY") || undefined;
-  const envWorkspaceId = Deno.env.get("EVAL_WORKSPACE_ID") || undefined;
-
-  const cfg = await readConfig();
-
-  let apiKey = cfg.evalApiKey ?? envApiKey;
-  if (!apiKey) {
-    const input = prompt("No backend API key found. Enter API key:") ?? "";
-    apiKey = input.trim();
-    if (!apiKey) throw new Error("Backend API key is required");
-  }
-
-  let workspaceId = cfg.workspaceId ?? envWorkspaceId ?? undefined;
   if (requireWorkspace && !workspaceId) {
     throw new Error(
       "No workspace selected. Run `evals workspace use <workspace-id>` to choose one.",
@@ -170,6 +139,11 @@ export async function resolveEvalAuth(
   await writeConfig(next);
 
   return { apiKey, workspaceId };
+}
+
+export async function updateConfig(partial: Partial<EvalConfig>): Promise<void> {
+  const current = await readConfig();
+  await writeConfig({ ...current, ...partial });
 }
 
 export async function setConfigKey(

@@ -16,16 +16,23 @@ Deno.test("listTraces constructs request", async () => {
     return Promise.resolve(new Response(body, { status: 200 }));
   }) as typeof fetch;
 
+  let tempHome: string | undefined;
   try {
+    tempHome = await Deno.makeTempDir();
     Deno.env.set("EVAL_API_URL", "http://api.test");
     Deno.env.set("EVAL_API_KEY", "test-key");
     Deno.env.set("EVAL_WORKSPACE_ID", "ws-123");
+    Deno.env.set("HOME", tempHome);
     await listTraces(5, 10, "asc");
   } finally {
     globalThis.fetch = origFetch;
     Deno.env.delete("EVAL_API_URL");
     Deno.env.delete("EVAL_API_KEY");
     Deno.env.delete("EVAL_WORKSPACE_ID");
+    Deno.env.delete("HOME");
+    if (tempHome) {
+      await Deno.remove(tempHome, { recursive: true }).catch(() => {});
+    }
   }
 
   assertEquals(calls.length, 1);
