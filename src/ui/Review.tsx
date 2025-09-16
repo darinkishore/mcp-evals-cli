@@ -94,14 +94,13 @@ export default function ReviewApp(
   const [poolItems, setPoolItems] = useState<TraceBrowseItem[]>([]);
   const [index, setIndex] = useState(0);
   // Derived filtered/sorted items (for view)
-  const items = useMemo(() => {
-    if (!failuresOnly) return poolItems;
-    // Filter+sort for failures mode
-    const arr = poolItems.slice();
-    const filtered = arr.filter(matchesFailuresOnly);
+  const computeViewItems = (source: TraceBrowseItem[]) => {
+    if (!failuresOnly) return source;
+    const filtered = source.filter(matchesFailuresOnly);
     filtered.sort(compareForFailuresMode);
     return filtered;
-  }, [poolItems, failuresOnly]);
+  };
+  const items = useMemo(() => computeViewItems(poolItems), [poolItems, failuresOnly]);
 
   const current: TraceBrowseItem | null = items.length
     ? items[Math.max(0, Math.min(index, items.length - 1))]
@@ -133,6 +132,40 @@ export default function ReviewApp(
   const justToggledVRef = useRef(false);
   const justToggledSRef = useRef(false);
   const pageSize = 25;
+
+  const advanceOrLoadMore = async () => {
+    if (index < items.length - 1) {
+      setIndex(index + 1);
+      return;
+    }
+    if (total !== null && offset >= total) {
+      dispatch({ type: "SET_NOTICE", value: "End of list" });
+      return;
+    }
+    try {
+      setLoading(true);
+      const res = await listTraces(offset, pageSize);
+      const fetched = res.items as TraceBrowseItem[];
+      const newItems = [...poolItems, ...fetched];
+      setPoolItems(newItems);
+      const newOffset = res.offset + fetched.length;
+      setOffset(newOffset);
+      setTotal(res.total);
+      const newView = computeViewItems(newItems);
+      if (index < newView.length - 1) {
+        setIndex(index + 1);
+      } else {
+        const totalCount = res.total ?? total;
+        if (totalCount !== null && totalCount !== undefined && newOffset >= totalCount) {
+          dispatch({ type: "SET_NOTICE", value: "End of list" });
+        }
+      }
+    } catch (e) {
+      setError((e as Error).message ?? String(e));
+    } finally {
+      setLoading(false);
+    }
+  };
 
   useEffect(() => {
     let cancelled = false;
@@ -177,7 +210,7 @@ export default function ReviewApp(
       if (key.rightArrow || (key.tab && !key.shift) || ch === "l") {
         dispatch({ type: "SET_ASK_ANSWER", value: null });
         dispatch({ type: "SET_NOTICE", value: null });
-        if (index < items.length - 1) setIndex(index + 1);
+        await advanceOrLoadMore();
         return;
       }
       if (key.leftArrow || (key.tab && key.shift) || ch === "h") {
@@ -240,36 +273,8 @@ export default function ReviewApp(
       // Next item (viewer)
       dispatch({ type: "SET_ASK_ANSWER", value: null });
       dispatch({ type: "SET_NOTICE", value: null });
-      if (index < items.length - 1) {
-        setIndex(index + 1);
-        return;
-      }
-      // Need to fetch more if available
-      if (total !== null && offset >= total) {
-        dispatch({ type: "SET_NOTICE", value: "End of list" });
-        return;
-      }
-      try {
-        setLoading(true);
-        const res = await listTraces(offset, pageSize);
-        const newItems = [...poolItems, ...(res.items as TraceBrowseItem[])];
-        setPoolItems(newItems);
-        setOffset(res.offset + res.items.length);
-        setTotal(res.total);
-        // After new data, try to advance if possible
-        const newView = failuresOnly
-          ? newItems.filter(matchesFailuresOnly).sort(compareForFailuresMode)
-          : newItems;
-        if (index < newView.length - 1) {
-          setIndex(index + 1);
-        } else if (total !== null && (res.offset + res.items.length) >= total) {
-          dispatch({ type: "SET_NOTICE", value: "End of list" });
-        }
-      } catch (e) {
-        setError((e as Error).message);
-      } finally {
-        setLoading(false);
-      }
+      await advanceOrLoadMore();
+      return;
     } else if (key.leftArrow || (key.tab && key.shift)) {
       // Previous item (viewer)
       dispatch({ type: "SET_ASK_ANSWER", value: null });
