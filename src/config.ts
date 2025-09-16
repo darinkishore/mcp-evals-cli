@@ -20,6 +20,8 @@ export interface EvalConfig {
   langsmithProjectId?: string;
   langsmithProjectName?: string;
   evalApiUrl?: string;
+  evalApiKey?: string;
+  workspaceId?: string;
 }
 
 const configDir = join(homeDir(), ".eval");
@@ -97,9 +99,77 @@ export async function resolveLangsmithConfig(
     langsmithProjectId: projectId,
     langsmithProjectName: projectName,
     evalApiUrl: cfg.evalApiUrl,
+    evalApiKey: cfg.evalApiKey,
+    workspaceId: cfg.workspaceId,
   });
 
   return { apiKey, projectId, projectName };
+}
+
+export async function resolveEvalAuth(
+  options?: { requireWorkspace?: boolean; workspaceOverride?: string },
+): Promise<{ apiKey: string; workspaceId?: string }> {
+  const requireWorkspace = options?.requireWorkspace ?? true;
+  const cfg = await readConfig();
+
+  const envApiKey = Deno.env.get("EVAL_API_KEY") || undefined;
+  let apiKey = cfg.evalApiKey ?? envApiKey;
+  if (!apiKey) {
+    throw new Error(
+      "Backend API key not configured. Run `evals config set evalApiKey <key>` or export EVAL_API_KEY.",
+    );
+  }
+
+  const envWorkspaceId = Deno.env.get("EVAL_WORKSPACE_ID") || undefined;
+  let workspaceId = options?.workspaceOverride ?? cfg.workspaceId ?? envWorkspaceId;
+  if (workspaceId) workspaceId = workspaceId.trim();
+  if (workspaceId === "") workspaceId = undefined;
+
+  if (requireWorkspace && !workspaceId) {
+    throw new Error(
+      "No workspace selected. Use `evals workspace use <workspace-id>` or set EVAL_WORKSPACE_ID.",
+    );
+  }
+
+  return { apiKey, workspaceId };
+}
+
+export async function updateConfig(partial: Partial<EvalConfig>): Promise<void> {
+  const current = await readConfig();
+  await writeConfig({ ...current, ...partial });
+}
+
+export async function resolveEvalAuth(
+  options?: { requireWorkspace?: boolean },
+): Promise<{ apiKey: string; workspaceId?: string }> {
+  const requireWorkspace = options?.requireWorkspace ?? true;
+  const envApiKey = Deno.env.get("EVAL_API_KEY") || undefined;
+  const envWorkspaceId = Deno.env.get("EVAL_WORKSPACE_ID") || undefined;
+
+  const cfg = await readConfig();
+
+  let apiKey = cfg.evalApiKey ?? envApiKey;
+  if (!apiKey) {
+    const input = prompt("No backend API key found. Enter API key:") ?? "";
+    apiKey = input.trim();
+    if (!apiKey) throw new Error("Backend API key is required");
+  }
+
+  let workspaceId = cfg.workspaceId ?? envWorkspaceId ?? undefined;
+  if (requireWorkspace && !workspaceId) {
+    throw new Error(
+      "No workspace selected. Run `evals workspace use <workspace-id>` to choose one.",
+    );
+  }
+
+  const next: EvalConfig = {
+    ...cfg,
+    evalApiKey: apiKey,
+    workspaceId: workspaceId ?? cfg.workspaceId,
+  };
+  await writeConfig(next);
+
+  return { apiKey, workspaceId };
 }
 
 export async function setConfigKey(

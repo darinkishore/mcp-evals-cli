@@ -7,17 +7,31 @@ import { CompletionsCommand } from "@cliffy/command/completions";
 import { UpgradeCommand } from "@cliffy/command/upgrade";
 import { GithubProvider } from "@cliffy/command/upgrade/provider/github";
 
-import { getStatus, importBatch, importOne, postAsk } from "./src/api.ts";
+import {
+  getStatus,
+  importBatch,
+  importExperiment,
+  importOne,
+  listTraces,
+  listWorkspaces as fetchWorkspaces,
+  getCurrentWorkspace as fetchCurrentWorkspace,
+  postAsk,
+  postFeedback,
+  seedWorkspace,
+  syncWorkspace,
+} from "./src/api.ts";
 import {
   type EvalConfig,
   getConfigPath,
   mask,
   openConfigInEditor,
   readConfig,
-  resolveLangsmithConfig,
+  resolveEvalAuth,
   setConfigKey,
   unsetConfigKey,
+  updateConfig,
 } from "./src/config.ts";
+import type { WorkspaceSummary } from "./src/types.ts";
 
 const VERSION = "v0.1.0";
 
@@ -114,11 +128,23 @@ async function runReview(opts?: { failuresOnly?: boolean }) {
   }
 }
 
+function printWorkspaceSummary(
+  workspace: WorkspaceSummary,
+  currentId?: string,
+) {
+  const isCurrent = currentId && workspace.id === currentId;
+  const bullet = isCurrent ? chalk.green("•") : " ";
+  const name = isCurrent
+    ? chalk.green(workspace.name)
+    : workspace.name;
+  const sync = workspace.autoSyncEnabled ? chalk.cyan(" [auto-sync]") : "";
+  console.log(`${bullet} ${name} (${workspace.id})${sync}`);
+}
+
 const cmd = new Command()
   .name("evals")
   .version(VERSION)
   .description("Evals CLI (Deno + Ink)")
-  // Use Cliffy's default help/version so it can show upgrade hints
   .globalOption("-r, --review", "Open the trace viewer (read-only)")
   .globalOption(
     "-f, --failures",
@@ -126,6 +152,7 @@ const cmd = new Command()
   )
   .action(async (options) => {
     if (options.review) {
+      await resolveEvalAuth(); // ensure workspace/API key configured
       await runReview({ failuresOnly: !!options.failures });
     } else {
       await cmd.showHelp();
@@ -134,32 +161,72 @@ const cmd = new Command()
 
 cmd
   .command("import")
-  .description("Import a batch of traces from LangSmith")
-  .option("--api-key <key:string>", "LangSmith API key")
-  .option("--project-id <id:string>", "LangSmith project ID")
-  .option("--project-name <name:string>", "LangSmith project name")
-  .option("--start-date <iso:string>", "Start date (ISO)")
-  .option("--end-date <iso:string>", "End date (ISO)")
-  .option("--limit <n:number>", "Limit number of traces")
+  .description("Import LangSmith data into the selected workspace")
+  .option("--trace-id <id:string>", "Import a single trace by ID")
+  .option("--experiment <name:string>", "Import a LangSmith experiment run (project name)")
+  .option("--label <label:string>", "Evaluation label when importing an experiment")
+  .option("--project-id <id:string>", "Override LangSmith project ID")
+  .option("--project-name <name:string>", "Override LangSmith project name")
+  .option("--langsmith-api-key <key:string>", "Override LangSmith API key for this import")
+  .option("--start-date <iso:string>", "Start date (ISO, batch import)")
+  .option("--end-date <iso:string>", "End date (ISO, batch import)")
+  .option("--limit <n:number>", "Limit number of traces for batch import")
+  .option("--workspace <id:string>", "Override workspace for this command")
   .action(async (options) => {
-    const { apiKey, projectId, projectName } = await resolveLangsmithConfig({
-      apiKey: options.apiKey,
-      projectId: options.projectId,
-      projectName: options.projectName,
-    });
-    const res = await importBatch({
-      apiKey,
-      projectId,
-      projectName,
-      startDate: options.startDate,
-      endDate: options.endDate,
-      limit: options.limit,
-    });
+    if (options.experiment) {
+      const res = await importExperiment(
+        {
+          experimentName: options.experiment,
+          label: options.label,
+          apiKey: options.langsmithApiKey,
+        },
+        { workspaceOverride: options.workspace },
+      );
+      console.log(
+        chalk.bold(
+          `Imported experiment ${res.experimentName} (evaluation ${res.evaluationId})`,
+        ),
+      );
+      console.log(`Imported ${res.imported} trace(s).`);
+      if (res.reviewUrl) {
+        console.log(`Review URL: ${chalk.cyan(res.reviewUrl)}`);
+      }
+      return;
+    }
+
+    if (options.traceId) {
+      const res = await importOne(
+        {
+          traceId: options.traceId,
+          projectId: options.projectId,
+          projectName: options.projectName,
+          apiKey: options.langsmithApiKey,
+        },
+        { workspaceOverride: options.workspace },
+      );
+      const status = res.created
+        ? "created"
+        : res.updated
+        ? "updated"
+        : "unchanged";
+      console.log(chalk.bold(`Trace ${res.trace.traceId} ${status}.`));
+      return;
+    }
+
+    const res = await importBatch(
+      {
+        projectId: options.projectId,
+        projectName: options.projectName,
+        apiKey: options.langsmithApiKey,
+        startDate: options.startDate,
+        endDate: options.endDate,
+        limit: options.limit,
+      },
+      { workspaceOverride: options.workspace },
+    );
     console.log(
       chalk.bold(
-        `Imported ${res.imported} trace(s) from ${
-          res.projectName ?? "(default)"
-        }`,
+        `Imported ${res.imported} trace(s) from ${res.projectName ?? "(default)"}`,
       ),
     );
     if (res.traces?.length) {
@@ -174,31 +241,11 @@ cmd
   });
 
 cmd
-  .command("import-one <traceId:string>")
-  .description("Import a single trace by id")
-  .option("--api-key <key:string>", "LangSmith API key")
-  .option("--project-id <id:string>", "LangSmith project ID")
-  .option("--project-name <name:string>", "LangSmith project name")
-  .action(async (options, traceId: string) => {
-    const { apiKey, projectId, projectName } = await resolveLangsmithConfig({
-      apiKey: options.apiKey,
-      projectId: options.projectId,
-      projectName: options.projectName,
-    });
-    const res = await importOne({ traceId, apiKey, projectId, projectName });
-    const status = res.created
-      ? "created"
-      : res.updated
-      ? "updated"
-      : "unchanged";
-    console.log(chalk.bold(`Trace ${res.trace.traceId} ${status}.`));
-  });
-
-cmd
   .command("status <traceId:string>")
   .description("Show analysis/review readiness for a trace")
-  .action(async (_options, traceId: string) => {
-    const s = await getStatus(traceId);
+  .option("--workspace <id:string>", "Override workspace for this command")
+  .action(async (options, traceId: string) => {
+    const s = await getStatus(traceId, { workspaceOverride: options.workspace });
     console.log(chalk.bold("Trace ID:"), s.trace_id);
     console.log(chalk.bold("Analysis:"), s.analysis_status);
     console.log(
@@ -217,16 +264,6 @@ cmd
   });
 
 cmd
-  .command("ask <traceId:string> <question...:string>")
-  .description("Ask a question about a stored trace")
-  .action(async (_options, traceId: string, ...qparts: string[]) => {
-    const question = qparts.join(" ").trim();
-    const r = await postAsk(traceId, question);
-    console.log(chalk.cyan("Ask:"));
-    console.log(r.answer);
-  });
-
-cmd
   .command("review")
   .description("Interactive trace viewer (read-only navigation)")
   .option(
@@ -234,6 +271,7 @@ cmd
     "Show only failed requirements or CRITICAL/HIGH/MEDIUM issues with priority",
   )
   .action(async (options) => {
+    await resolveEvalAuth();
     await runReview({ failuresOnly: !!options.failures });
   });
 
@@ -245,14 +283,13 @@ configCmd
   .description("Print config path and current values")
   .action(async () => {
     const cfg = await readConfig();
+    const masked: EvalConfig = {
+      ...cfg,
+      langsmithApiKey: mask(cfg.langsmithApiKey),
+      evalApiKey: mask(cfg.evalApiKey),
+    };
     console.log(chalk.bold("Config path:"), getConfigPath());
-    console.log(
-      JSON.stringify(
-        { ...cfg, langsmithApiKey: mask(cfg.langsmithApiKey) },
-        null,
-        2,
-      ),
-    );
+    console.log(JSON.stringify(masked, null, 2));
   });
 
 configCmd
@@ -264,10 +301,12 @@ configCmd
       "langsmithProjectId",
       "langsmithProjectName",
       "evalApiUrl",
+      "evalApiKey",
+      "workspaceId",
     ];
     if (!allowed.includes(key)) {
       console.log(
-        "Allowed keys: langsmithApiKey, langsmithProjectId, langsmithProjectName, evalApiUrl",
+        "Allowed keys: langsmithApiKey, langsmithProjectId, langsmithProjectName, evalApiUrl, evalApiKey, workspaceId",
       );
       return;
     }
@@ -285,10 +324,12 @@ configCmd
       "langsmithProjectId",
       "langsmithProjectName",
       "evalApiUrl",
+      "evalApiKey",
+      "workspaceId",
     ];
     if (!allowed.includes(key)) {
       console.log(
-        "Allowed keys: langsmithApiKey, langsmithProjectId, langsmithProjectName, evalApiUrl",
+        "Allowed keys: langsmithApiKey, langsmithProjectId, langsmithProjectName, evalApiUrl, evalApiKey, workspaceId",
       );
       return;
     }
@@ -316,6 +357,90 @@ configCmd
   });
 
 cmd.command("config", configCmd);
+
+const workspaceCmd = new Command()
+  .description("Manage backend workspaces");
+
+workspaceCmd
+  .command("list")
+  .description("List available workspaces")
+  .action(async () => {
+    await resolveEvalAuth({ requireWorkspace: false });
+    const cfg = await readConfig();
+    const workspaces = await fetchWorkspaces();
+    if (!workspaces.length) {
+      console.log("No workspaces found. Use `evals workspace seed` to create one.");
+      return;
+    }
+    for (const ws of workspaces) {
+      printWorkspaceSummary(ws, cfg.workspaceId);
+    }
+  });
+
+workspaceCmd
+  .command("current")
+  .description("Show the currently selected workspace")
+  .action(async () => {
+    const { workspaceId } = await resolveEvalAuth();
+    const info = await fetchCurrentWorkspace();
+    printWorkspaceSummary(info, workspaceId);
+  });
+
+workspaceCmd
+  .command("use <workspaceId:string>")
+  .description("Set the current workspace ID")
+  .action(async (_options, workspaceId: string) => {
+    await updateConfig({ workspaceId });
+    console.log("Current workspace set to", workspaceId);
+  });
+
+workspaceCmd
+  .command("sync")
+  .description("Trigger a manual LangSmith sync for a workspace")
+  .option("--workspace <id:string>", "Workspace to sync (defaults to current)")
+  .option("--lookback-hours <h:number>", "Lookback window in hours")
+  .option("--limit <n:number>", "Limit number of runs")
+  .action(async (options) => {
+    const workspaceId = options.workspace ?? (await resolveEvalAuth()).workspaceId;
+    if (!workspaceId) {
+      throw new Error("No workspace selected. Use `evals workspace use <id>` first.");
+    }
+    const payload: { lookbackHours?: number; limit?: number } = {};
+    if (options.lookbackHours !== undefined) payload.lookbackHours = Number(options.lookbackHours);
+    if (options.limit !== undefined) payload.limit = Number(options.limit);
+    const res = await syncWorkspace(workspaceId, payload);
+    console.log(
+      chalk.bold(`Sync requested for workspace ${workspaceId} (event ${res.emitted})`),
+    );
+  });
+
+workspaceCmd
+  .command("seed")
+  .description("Create or reuse a workspace and refresh the API key")
+  .option("--name <name:string>", "Workspace name")
+  .option("--langsmith-api-key <key:string>", "LangSmith API key to associate")
+  .option("--auto-sync", "Enable auto sync for this workspace")
+  .option("--use", "Set the seeded workspace as current")
+  .action(async (options) => {
+    const name = options.name ?? prompt("Workspace name:") ?? "";
+    if (!name.trim()) throw new Error("Workspace name is required");
+    const lsKey = options.langsmithApiKey ?? prompt("LangSmith API key:") ?? "";
+    if (!lsKey.trim()) throw new Error("LangSmith API key is required");
+    const res = await seedWorkspace({
+      workspaceName: name.trim(),
+      langsmithApiKey: lsKey.trim(),
+      autoSync: !!options.autoSync,
+    });
+    await updateConfig({ evalApiKey: res.apiKey });
+    if (options.use || !(await readConfig()).workspaceId) {
+      await updateConfig({ workspaceId: res.workspaceId });
+    }
+    console.log(chalk.bold("Workspace seeded."));
+    console.log("Workspace ID:", res.workspaceId);
+    console.log("API key was refreshed and stored in config." );
+  });
+
+cmd.command("workspace", workspaceCmd);
 
 cmd.command("completions", new CompletionsCommand());
 

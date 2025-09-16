@@ -64,3 +64,37 @@ export interface TraceBrowseResponse {
   limit: number;
   total: number;
 }
+
+export interface ImportExperimentResponse {
+  success: boolean;
+  imported: number;
+  evaluationId: string;
+  datasetId: string | null;
+  experimentName: string;
+  importedAt: string;
+  projectId?: string | null;
+  reviewUrl?: string | null;
+}
+
+export interface WorkspaceSummary {
+  id: string;
+  name: string;
+  langsmithApiKey?: string | null;
+  langsmithProjectId?: string | null;
+  langsmithProjectName?: string | null;
+  autoSyncEnabled: boolean;
+  createdAt: string;
+}
+
+export interface SeedWorkspaceResponse {
+  workspaceId: string;
+  apiKey: string;
+  keyPrefix: string;
+  autoSyncEnabled: boolean;
+}
+
+export interface AdminEmitResponse {
+  ok: boolean;
+  emitted: string;
+  data: unknown;
+}

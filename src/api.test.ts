@@ -18,10 +18,14 @@ Deno.test("listTraces constructs request", async () => {
 
   try {
     Deno.env.set("EVAL_API_URL", "http://api.test");
+    Deno.env.set("EVAL_API_KEY", "test-key");
+    Deno.env.set("EVAL_WORKSPACE_ID", "ws-123");
     await listTraces(5, 10, "asc");
   } finally {
     globalThis.fetch = origFetch;
     Deno.env.delete("EVAL_API_URL");
+    Deno.env.delete("EVAL_API_KEY");
+    Deno.env.delete("EVAL_WORKSPACE_ID");
   }
 
   assertEquals(calls.length, 1);
@@ -29,4 +33,7 @@ Deno.test("listTraces constructs request", async () => {
     calls[0].url,
     "http://api.test/traces/list?offset=5&limit=10&only_completed=true&order=asc",
   );
+  const headers = new Headers(calls[0].init?.headers);
+  assertEquals(headers.get("Authorization"), "Bearer test-key");
+  assertEquals(headers.get("X-Workspace-Id"), "ws-123");
 });
