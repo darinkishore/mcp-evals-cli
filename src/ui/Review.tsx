@@ -1,12 +1,24 @@
 import { useEffect, useMemo, useReducer, useRef, useState } from "react";
 import { Box, Text, useApp, useInput } from "ink";
+import type { Key } from "ink";
 import type { TraceBrowseItem } from "../types.ts";
 import { listTraces, postAsk, postFeedback } from "../api.ts";
-import { AskAnswer, CommandBar, Header, TranscriptView, BottomDetailsPane } from "./index.ts";
+import {
+  AskAnswer,
+  BottomDetailsPane,
+  CommandBar,
+  Header,
+  TranscriptView,
+} from "./index.ts";
 import { compareForFailuresMode, matchesFailuresOnly } from "./reviewFilter.ts";
-import { icons } from "./theme.ts";
 
-function isBackspace(inp: string, key: any): boolean {
+type TimerRegistry = typeof globalThis & {
+  __ask_timer?: ReturnType<typeof setTimeout>;
+};
+
+const timerRegistry = globalThis as TimerRegistry;
+
+function isBackspace(inp: string, key: Key): boolean {
   // Handle various backspace/delete signals across terminals
   // - key.backspace (if provided by Ink)
   // - key.delete (some terminals map backspace to delete)
@@ -100,7 +112,10 @@ export default function ReviewApp(
     filtered.sort(compareForFailuresMode);
     return filtered;
   };
-  const items = useMemo(() => computeViewItems(poolItems), [poolItems, failuresOnly]);
+  const items = useMemo(() => computeViewItems(poolItems), [
+    poolItems,
+    failuresOnly,
+  ]);
 
   const current: TraceBrowseItem | null = items.length
     ? items[Math.max(0, Math.min(index, items.length - 1))]
@@ -156,7 +171,10 @@ export default function ReviewApp(
         setIndex(index + 1);
       } else {
         const totalCount = res.total ?? total;
-        if (totalCount !== null && totalCount !== undefined && newOffset >= totalCount) {
+        if (
+          totalCount !== null && totalCount !== undefined &&
+          newOffset >= totalCount
+        ) {
           dispatch({ type: "SET_NOTICE", value: "End of list" });
         }
       }
@@ -197,7 +215,10 @@ export default function ReviewApp(
   useInput(async (inp, key) => {
     // Global toggle for Transcript Mode
     if (key.ctrl && (inp === "t" || inp === "T")) {
-      dispatch({ type: "SET_VIEW_MODE", mode: ui.viewMode === "transcript" ? "normal" : "transcript" });
+      dispatch({
+        type: "SET_VIEW_MODE",
+        mode: ui.viewMode === "transcript" ? "normal" : "transcript",
+      });
       return;
     }
 
@@ -205,7 +226,10 @@ export default function ReviewApp(
       const visibleRows = (rows ?? 24) - 3 - 1; // header + hints
       const step = Math.max(1, Math.floor(visibleRows / 2));
       const ch = (inp ?? "").toLowerCase();
-      if (ch === "q") { exit(); return; }
+      if (ch === "q") {
+        exit();
+        return;
+      }
       // Navigation between traces
       if (key.rightArrow || (key.tab && !key.shift) || ch === "l") {
         dispatch({ type: "SET_ASK_ANSWER", value: null });
@@ -220,13 +244,43 @@ export default function ReviewApp(
         return;
       }
       // Scroll transcript
-      if (key.downArrow || ch === "j") { dispatch({ type: "SET_TRANSCRIPT_OFFSET", value: ui.transcriptOffset + 1 }); return; }
-      if (key.upArrow || ch === "k") { dispatch({ type: "SET_TRANSCRIPT_OFFSET", value: Math.max(0, ui.transcriptOffset - 1) }); return; }
-      if (key.pageDown) { dispatch({ type: "SET_TRANSCRIPT_OFFSET", value: ui.transcriptOffset + step }); return; }
-      if (key.pageUp) { dispatch({ type: "SET_TRANSCRIPT_OFFSET", value: Math.max(0, ui.transcriptOffset - step) }); return; }
-      if (ch === "g") { dispatch({ type: "SET_TRANSCRIPT_OFFSET", value: 0 }); return; }
+      if (key.downArrow || ch === "j") {
+        dispatch({
+          type: "SET_TRANSCRIPT_OFFSET",
+          value: ui.transcriptOffset + 1,
+        });
+        return;
+      }
+      if (key.upArrow || ch === "k") {
+        dispatch({
+          type: "SET_TRANSCRIPT_OFFSET",
+          value: Math.max(0, ui.transcriptOffset - 1),
+        });
+        return;
+      }
+      if (key.pageDown) {
+        dispatch({
+          type: "SET_TRANSCRIPT_OFFSET",
+          value: ui.transcriptOffset + step,
+        });
+        return;
+      }
+      if (key.pageUp) {
+        dispatch({
+          type: "SET_TRANSCRIPT_OFFSET",
+          value: Math.max(0, ui.transcriptOffset - step),
+        });
+        return;
+      }
+      if (ch === "g") {
+        dispatch({ type: "SET_TRANSCRIPT_OFFSET", value: 0 });
+        return;
+      }
       if (ch === "g" && key.shift) { /* unreachable via ch; ignore */ }
-      if (ch === "s") { dispatch({ type: "TOGGLE_SUMMARIES" }); return; }
+      if (ch === "s") {
+        dispatch({ type: "TOGGLE_SUMMARIES" });
+        return;
+      }
       // Disabled compose actions
       if (ch === "?" || ch === "v" || key.return) {
         dispatch({ type: "SET_NOTICE", value: "Exit transcript to compose" });
@@ -258,7 +312,9 @@ export default function ReviewApp(
       }
       if (key.return) {
         // keep draft; cancel discard prompt if showing
-        if (confirmDiscard) dispatch({ type: "SET_CONFIRM_DISCARD", value: false });
+        if (confirmDiscard) {
+          dispatch({ type: "SET_CONFIRM_DISCARD", value: false });
+        }
         return; // onSubmit handled by TextInput
       }
       // Swallow other keys (let TextInput handle printable keys)
@@ -285,7 +341,10 @@ export default function ReviewApp(
       dispatch({ type: "SET_BOTTOM_OFFSET", value: ui.bottomOffset + 1 });
       return;
     } else if (key.upArrow || ch === "k") {
-      dispatch({ type: "SET_BOTTOM_OFFSET", value: Math.max(0, ui.bottomOffset - 1) });
+      dispatch({
+        type: "SET_BOTTOM_OFFSET",
+        value: Math.max(0, ui.bottomOffset - 1),
+      });
       return;
     } else if (key.pageDown) {
       const step = Math.max(3, Math.floor((rows ?? 24) / 4));
@@ -293,7 +352,10 @@ export default function ReviewApp(
       return;
     } else if (key.pageUp) {
       const step = Math.max(3, Math.floor((rows ?? 24) / 4));
-      dispatch({ type: "SET_BOTTOM_OFFSET", value: Math.max(0, ui.bottomOffset - step) });
+      dispatch({
+        type: "SET_BOTTOM_OFFSET",
+        value: Math.max(0, ui.bottomOffset - step),
+      });
       return;
     } else if (ch === "g") {
       dispatch({ type: "SET_BOTTOM_OFFSET", value: 0 });
@@ -310,7 +372,12 @@ export default function ReviewApp(
       return;
     } else if (ch === "s" || ch === "S") {
       dispatch({ type: "TOGGLE_SUMMARIES" });
-      dispatch({ type: "SET_NOTICE", value: showSummaries ? "Showing full descriptions" : "Showing summaries" });
+      dispatch({
+        type: "SET_NOTICE",
+        value: showSummaries
+          ? "Showing full descriptions"
+          : "Showing summaries",
+      });
       // Swallow a stray 's' that TextInput may capture when empty
       justToggledSRef.current = true;
       return;
@@ -331,10 +398,15 @@ export default function ReviewApp(
       dispatch({ type: "SET_ASK_VISIBLE", value: true });
       // Auto-hide the answer after 20s
       try {
-        const timer = setTimeout(() => dispatch({ type: "SET_ASK_VISIBLE", value: false }), 20_000);
+        const timer = setTimeout(
+          () => dispatch({ type: "SET_ASK_VISIBLE", value: false }),
+          20_000,
+        );
         // store timer id via closure; avoid keeping reference across rerenders
-        (globalThis as any).__ask_timer && clearTimeout((globalThis as any).__ask_timer);
-        (globalThis as any).__ask_timer = timer;
+        if (timerRegistry.__ask_timer) {
+          clearTimeout(timerRegistry.__ask_timer);
+        }
+        timerRegistry.__ask_timer = timer;
       } catch { /* ignore */ }
     } catch (e) {
       setError((e as Error).message);
@@ -363,9 +435,8 @@ export default function ReviewApp(
 
   const controls = useMemo(() => (
     <Text>
-      [←] prev [→] next [Tab] next [Shift+Tab] prev  [↑/↓ PgUp/PgDn] scroll  [?]ask [q]uit{failuresOnly
-        ? "   (Filtered: failures only)"
-        : ""}
+      [←] prev [→] next [Tab] next [Shift+Tab] prev [↑/↓ PgUp/PgDn] scroll
+      [?]ask [q]uit{failuresOnly ? "   (Filtered: failures only)" : ""}
       {showSummaries ? "   (Summaries)" : "   (Full)"}
     </Text>
   ), [showSummaries, failuresOnly]);
@@ -400,7 +471,8 @@ export default function ReviewApp(
         rows={totalRows}
         cols={colsProp}
         offset={ui.transcriptOffset}
-        onOffsetChange={(n) => dispatch({ type: "SET_TRANSCRIPT_OFFSET", value: n })}
+        onOffsetChange={(n) =>
+          dispatch({ type: "SET_TRANSCRIPT_OFFSET", value: n })}
         showSummaries={showSummaries}
         notice={notice ?? undefined}
       />
@@ -415,13 +487,20 @@ export default function ReviewApp(
 
         {/* Bottom: single full-width details pane (no inline trace) */}
         <Box flexDirection="column" gap={0} flexGrow={1}>
-          <Box flexDirection="column" borderStyle="round" borderColor="cyan" paddingX={1} height={paneHeight}>
+          <Box
+            flexDirection="column"
+            borderStyle="round"
+            borderColor="cyan"
+            paddingX={1}
+            height={paneHeight}
+          >
             <BottomDetailsPane
               issues={current.issues ?? []}
               requirements={current.requirements ?? []}
               height={paneHeight}
               offset={ui.bottomOffset}
-              onOffsetChange={(n) => dispatch({ type: "SET_BOTTOM_OFFSET", value: n })}
+              onOffsetChange={(n) =>
+                dispatch({ type: "SET_BOTTOM_OFFSET", value: n })}
               showSummaries={showSummaries}
             />
           </Box>
@@ -460,7 +539,12 @@ export default function ReviewApp(
             } else {
               dispatch({ type: "SET_DRAFT", value: v });
             }
-            if (confirmDiscard) dispatch({ type: "SET_CONFIRM_DISCARD", value: false });
+            if (confirmDiscard) {
+              dispatch({
+                type: "SET_CONFIRM_DISCARD",
+                value: false,
+              });
+            }
           }}
           onSubmitAsk={(t) => onSubmitAsk(t)}
           onSubmitFeedback={(t) => onSubmitFeedback(t)}

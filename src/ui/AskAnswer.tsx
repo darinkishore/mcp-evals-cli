@@ -5,7 +5,9 @@ interface AskAnswerProps {
   visible?: boolean;
 }
 
-export default function AskAnswer({ askAnswer, visible = true }: AskAnswerProps) {
+export default function AskAnswer(
+  { askAnswer, visible = true }: AskAnswerProps,
+) {
   if (!askAnswer) return null;
   if (!visible) {
     return <Text color="gray">Answer hidden (press V to view)</Text>;

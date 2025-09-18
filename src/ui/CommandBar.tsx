@@ -17,7 +17,7 @@ interface CommandBarProps {
 }
 
 function line(cols?: number) {
-  const n = Math.max(4, Math.min(1000, (cols ?? 80)));
+  const n = Math.max(4, Math.min(1000, cols ?? 80));
   return "\u2500".repeat(n); // BOX DRAWINGS LIGHT HORIZONTAL
 }
 
@@ -50,8 +50,8 @@ export default function CommandBar({
 
       {/* input row */}
       <Box>
-        <Text> &gt; </Text>
-        <Text color={labelColor}>{label} </Text>
+        <Text>&gt;</Text>
+        <Text color={labelColor}>{label}</Text>
         <TextInput
           value={value}
           onChange={setValue}
@@ -70,9 +70,7 @@ export default function CommandBar({
           Discard draft? Press Esc to confirm, Enter to keep.
         </Text>
       )}
-      {message && !confirmDiscard && (
-        <Text color="green">{message}</Text>
-      )}
+      {message && !confirmDiscard && <Text color="green">{message}</Text>}
     </Box>
   );
 }
