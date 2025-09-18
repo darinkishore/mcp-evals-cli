@@ -113,7 +113,7 @@ export async function resolveEvalAuth(
   const cfg = await readConfig();
 
   const envApiKey = Deno.env.get("EVAL_API_KEY") || undefined;
-  let apiKey = cfg.evalApiKey ?? envApiKey;
+  let apiKey = envApiKey ?? cfg.evalApiKey;
   if (!apiKey) {
     const input = prompt("No backend API key found. Enter API key:") ?? "";
     apiKey = input.trim();
@@ -121,7 +121,8 @@ export async function resolveEvalAuth(
   }
 
   const envWorkspaceId = Deno.env.get("EVAL_WORKSPACE_ID") || undefined;
-  let workspaceId = options?.workspaceOverride ?? cfg.workspaceId ?? envWorkspaceId;
+  let workspaceId = options?.workspaceOverride ?? envWorkspaceId ??
+    cfg.workspaceId;
   if (workspaceId) workspaceId = workspaceId.trim();
   if (workspaceId === "") workspaceId = undefined;
 
@@ -141,7 +142,9 @@ export async function resolveEvalAuth(
   return { apiKey, workspaceId };
 }
 
-export async function updateConfig(partial: Partial<EvalConfig>): Promise<void> {
+export async function updateConfig(
+  partial: Partial<EvalConfig>,
+): Promise<void> {
   const current = await readConfig();
   await writeConfig({ ...current, ...partial });
 }

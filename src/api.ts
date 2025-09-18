@@ -4,10 +4,10 @@ import type {
   ImportBatchResponse,
   ImportExperimentResponse,
   ImportOneResponse,
-  SeedWorkspaceResponse,
   StatusResponse,
   TraceBrowseResponse,
   WorkspaceSummary,
+  ExperimentStatusResponse,
 } from "./types.ts";
 import { readConfig, resolveEvalAuth } from "./config.ts";
 
@@ -117,6 +117,17 @@ export function importExperiment(
   );
 }
 
+export function getExperimentStatus(
+  experimentName: string,
+  opts?: { workspaceOverride?: string },
+): Promise<ExperimentStatusResponse> {
+  return authed<ExperimentStatusResponse>(
+    `/api/v0/experiments/status/${encodeURIComponent(experimentName)}`,
+    undefined,
+    { workspaceOverride: opts?.workspaceOverride },
+  );
+}
+
 export function getStatus(
   traceId: string,
   opts?: { workspaceOverride?: string },
@@ -213,7 +224,12 @@ export function updateWorkspace(
 
 export function syncWorkspace(
   workspaceId: string,
-  payload: { lookbackHours?: number; limit?: number } = {},
+  payload: {
+    lookbackHours?: number;
+    limit?: number;
+    projectId?: string;
+    projectName?: string;
+  } = {},
 ): Promise<AdminEmitResponse> {
   return authed<AdminEmitResponse>(
     `/api/v0/workspaces/${encodeURIComponent(workspaceId)}/sync`,
@@ -225,21 +241,23 @@ export function syncWorkspace(
   );
 }
 
-export function seedWorkspace(payload: {
+export function createWorkspace(payload: {
   workspaceName: string;
   langsmithApiKey: string;
   autoSync?: boolean;
-  live?: boolean;
-}): Promise<SeedWorkspaceResponse> {
-  return authed<SeedWorkspaceResponse>(
-    `/admin/tenants/seed`,
+  langsmithProjectId?: string;
+  langsmithProjectName?: string;
+}): Promise<WorkspaceSummary> {
+  return authed<WorkspaceSummary>(
+    `/api/v0/workspaces`,
     {
       method: "POST",
       body: JSON.stringify({
-        workspaceName: payload.workspaceName,
+        name: payload.workspaceName,
         langsmithApiKey: payload.langsmithApiKey,
-        live: payload.live ?? true,
-        autoSync: payload.autoSync,
+        langsmithProjectId: payload.langsmithProjectId,
+        langsmithProjectName: payload.langsmithProjectName,
+        autoSyncEnabled: payload.autoSync,
       }),
     },
     { requireWorkspace: false },

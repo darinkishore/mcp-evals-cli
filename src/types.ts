@@ -72,8 +72,23 @@ export interface ImportExperimentResponse {
   datasetId: string | null;
   experimentName: string;
   importedAt: string;
+  status: string;
+  totalTraces: number;
+  completedTraces: number;
   projectId?: string | null;
+  projectName?: string | null;
+  langsmithDatasetId?: string | null;
+  workspaceId?: string | null;
   reviewUrl?: string | null;
+}
+
+export interface ExperimentStatusResponse {
+  evaluationId: string;
+  status: string;
+  totalTraces: number;
+  completedTraces: number;
+  datasetId?: string | null;
+  experimentName: string;
 }
 
 export interface WorkspaceSummary {
@@ -84,13 +99,6 @@ export interface WorkspaceSummary {
   langsmithProjectName?: string | null;
   autoSyncEnabled: boolean;
   createdAt: string;
-}
-
-export interface SeedWorkspaceResponse {
-  workspaceId: string;
-  apiKey: string;
-  keyPrefix: string;
-  autoSyncEnabled: boolean;
 }
 
 export interface AdminEmitResponse {
