@@ -1,7 +1,7 @@
-/** @jsxImportSource react */
+/** @jsxImportSource npm:react@19.1.1 */
 // deno-lint-ignore-file no-unused-vars
-import React from "react";
-import { Box, Text } from "ink";
+import React from "npm:react@19.1.1";
+import { Box, Text } from "npm:ink@6.3.0";
 import type { ReviewRequirement } from "../types.ts";
 import { icons } from "./theme.ts";
 
