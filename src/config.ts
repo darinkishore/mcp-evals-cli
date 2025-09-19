@@ -1,4 +1,4 @@
-import { join } from "@std/path";
+import { join } from "jsr:@std/path@1.0.6";
 // Avoid Node's readline-sync to prevent TTY rawMode issues under Deno's
 // Node-compat layer. Use Deno's native prompt instead.
 

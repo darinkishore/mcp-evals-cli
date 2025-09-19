@@ -1,4 +1,4 @@
-import { assertEquals } from "@std/assert";
+import { assertEquals } from "jsr:@std/assert@1.0.14";
 import { listTraces } from "./api.ts";
 
 Deno.test("listTraces constructs request", async () => {

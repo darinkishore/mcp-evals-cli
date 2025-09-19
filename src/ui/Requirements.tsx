@@ -1,4 +1,4 @@
-import { Box, Text } from "ink";
+import { Box, Text } from "npm:ink@6.3.0";
 import type { ReviewRequirement } from "../types.ts";
 import { icons } from "./theme.ts";
 

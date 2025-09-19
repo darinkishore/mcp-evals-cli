@@ -1,6 +1,6 @@
 import process from "node:process";
-import { useEffect, useState } from "react";
-import { Box } from "ink";
+import { useEffect, useState } from "npm:react@19.1.1";
+import { Box } from "npm:ink@6.3.0";
 import ReviewApp from "./Review.tsx";
 
 interface FullScreenAppProps {

@@ -1,5 +1,5 @@
-import { Box, Text } from "ink";
-import TextInput from "ink-text-input";
+import { Box, Text } from "npm:ink@6.3.0";
+import TextInput from "npm:ink-text-input@6.0.0";
 
 type ComposeMode = "feedback" | "ask";
 

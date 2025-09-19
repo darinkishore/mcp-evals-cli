@@ -1,6 +1,6 @@
-import { Box, Text, useStdin } from "ink";
-import { useEffect } from "react";
-import type { ReactNode } from "react";
+import { Box, Text, useStdin } from "npm:ink@6.3.0";
+import { useEffect } from "npm:react@19.1.1";
+import type { ReactNode } from "npm:react@19.1.1";
 import process from "node:process";
 import type {
   ReviewIssue,

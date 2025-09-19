@@ -1,11 +1,11 @@
 #!/usr/bin/env -S deno run -A --config cli/deno/deno.jsonc
 // deno-lint-ignore-file no-explicit-any
-import chalk from "chalk";
+import chalk from "npm:chalk@5.3.0";
 
-import { Command } from "@cliffy/command";
-import { CompletionsCommand } from "@cliffy/command/completions";
-import { UpgradeCommand } from "@cliffy/command/upgrade";
-import { GithubProvider } from "@cliffy/command/upgrade/provider/github";
+import { Command } from "jsr:@cliffy/command@1.0.0-rc.7";
+import { CompletionsCommand } from "jsr:@cliffy/command@1.0.0-rc.7/completions";
+import { UpgradeCommand } from "jsr:@cliffy/command@1.0.0-rc.7/upgrade";
+import { GithubProvider } from "jsr:@cliffy/command@1.0.0-rc.7/upgrade/provider/github";
 
 import {
   createWorkspace,
@@ -29,7 +29,7 @@ import {
 } from "./src/config.ts";
 import type { WorkspaceSummary } from "./src/types.ts";
 
-const VERSION = "v0.2.0";
+const VERSION = "v0.2.1";
 
 async function runReview(opts?: { failuresOnly?: boolean }) {
   // Ensure consistent dev/prod selection for React/Reconciler
@@ -41,8 +41,8 @@ async function runReview(opts?: { failuresOnly?: boolean }) {
   // Lazy-load Ink and React only when needed to avoid TTY rawMode issues
   const [{ default: React }, { render }, { default: FullScreenApp }] =
     await Promise.all([
-      import("react"),
-      import("ink"),
+      import("npm:react@19.1.1"),
+      import("npm:ink@6.3.0"),
       import("./src/ui/FullScreenApp.tsx"),
     ]);
 
@@ -53,7 +53,8 @@ async function runReview(opts?: { failuresOnly?: boolean }) {
   ) {
     throw new Error(
       "React 19 not resolved at runtime (missing __CLIENT_INTERNALS...). " +
-        "Try: deno cache --reload cli/deno/main.ts, then reinstall with deno install -f -A --config cli/deno/deno.jsonc -n evals cli/deno/main.ts.",
+        `Try: deno cache --reload https://raw.githubusercontent.com/darinkishore/mcp-evals-cli/${VERSION}/main.ts, ` +
+        `then reinstall with deno install --global --force --allow-all -n evals https://raw.githubusercontent.com/darinkishore/mcp-evals-cli/${VERSION}/main.ts.`,
     );
   }
 

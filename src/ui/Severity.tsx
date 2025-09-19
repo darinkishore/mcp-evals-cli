@@ -1,4 +1,4 @@
-import { Text } from "ink";
+import { Text } from "npm:ink@6.3.0";
 
 interface SeverityProps {
   level: string;

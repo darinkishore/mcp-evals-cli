@@ -1,5 +1,5 @@
-import { useEffect, useMemo, useState } from "react";
-import { Box, Text, useApp, useInput } from "ink";
+import { useEffect, useMemo, useState } from "npm:react@19.1.1";
+import { Box, Text, useApp, useInput } from "npm:ink@6.3.0";
 import type { TraceBrowseItem } from "../types.ts";
 import { listTraces } from "../api.ts";
 import { BottomDetailsPane, Header, TranscriptView } from "./index.ts";

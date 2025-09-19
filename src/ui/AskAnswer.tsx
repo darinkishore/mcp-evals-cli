@@ -1,4 +1,4 @@
-import { Box, Text } from "ink";
+import { Box, Text } from "npm:ink@6.3.0";
 
 interface AskAnswerProps {
   askAnswer: string;

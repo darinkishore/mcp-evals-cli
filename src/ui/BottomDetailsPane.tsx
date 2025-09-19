@@ -1,7 +1,7 @@
-import { Box, Text } from "ink";
+import { Box, Text } from "npm:ink@6.3.0";
 import type { ReviewIssue, ReviewRequirement } from "../types.ts";
-import type { ReactNode } from "react";
-import { useEffect } from "react";
+import type { ReactNode } from "npm:react@19.1.1";
+import { useEffect } from "npm:react@19.1.1";
 
 interface BottomDetailsPaneProps {
   issues: ReviewIssue[];
