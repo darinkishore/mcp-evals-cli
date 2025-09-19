@@ -1,8 +1,8 @@
-/** @jsxImportSource npm:react@19.1.1 */
+/** @jsxImportSource react */
 // deno-lint-ignore-file no-unused-vars
-import React from "npm:react@19.1.1";
-import { Box, Text } from "npm:ink@6.3.0";
-import TextInput from "npm:ink-text-input@6.0.0";
+import React from "react";
+import { Box, Text } from "ink";
+import TextInput from "ink-text-input";
 
 type ComposeMode = "feedback" | "ask";
 

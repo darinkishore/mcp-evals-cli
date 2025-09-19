@@ -1,7 +1,7 @@
-/** @jsxImportSource npm:react@19.1.1 */
+/** @jsxImportSource react */
 // deno-lint-ignore-file no-unused-vars
-import React, { type ReactNode, useEffect } from "npm:react@19.1.1";
-import { Box, Text, useStdin } from "npm:ink@6.3.0";
+import React, { type ReactNode, useEffect } from "react";
+import { Box, Text, useStdin } from "ink";
 import process from "node:process";
 import type {
   ReviewIssue,

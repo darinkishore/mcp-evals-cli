@@ -1,6 +1,6 @@
 #!/usr/bin/env -S deno run -A --config cli/deno/deno.jsonc
 // deno-lint-ignore-file no-explicit-any
-import chalk from "npm:chalk@5.3.0";
+import chalk from "chalk";
 
 import { Command } from "jsr:@cliffy/command@1.0.0-rc.7";
 import { CompletionsCommand } from "jsr:@cliffy/command@1.0.0-rc.7/completions";
@@ -29,7 +29,7 @@ import {
 } from "./src/config.ts";
 import type { WorkspaceSummary } from "./src/types.ts";
 
-const VERSION = "v0.2.2";
+const VERSION = "v0.2.3";
 
 async function runReview(opts?: { failuresOnly?: boolean }) {
   // Ensure consistent dev/prod selection for React/Reconciler
@@ -41,8 +41,8 @@ async function runReview(opts?: { failuresOnly?: boolean }) {
   // Lazy-load Ink and React only when needed to avoid TTY rawMode issues
   const [{ default: React }, { render }, { default: FullScreenApp }] =
     await Promise.all([
-      import("npm:react@19.1.1"),
-      import("npm:ink@6.3.0"),
+      import("react"),
+      import("ink"),
       import("./src/ui/FullScreenApp.tsx"),
     ]);
 
