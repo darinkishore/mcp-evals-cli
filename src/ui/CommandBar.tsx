@@ -14,6 +14,7 @@ interface CommandBarProps {
   message?: string | null;
   // When true, show the discard confirmation hint beneath the bar
   confirmDiscard?: boolean;
+  focused?: boolean;
 }
 
 function line(cols?: number) {
@@ -30,6 +31,7 @@ export default function CommandBar({
   onSubmitAsk,
   message,
   confirmDiscard = false,
+  focused = false,
 }: CommandBarProps) {
   const isAsk = mode === "ask";
   const label = isAsk ? "Ask:" : "Feedback:";
@@ -56,8 +58,7 @@ export default function CommandBar({
           value={value}
           onChange={setValue}
           onSubmit={handleSubmit}
-          // Always focused: this is the persistent command bar
-          // ink-text-input uses isFocused=true by default
+          focus={focused}
         />
       </Box>
 
