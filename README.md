@@ -26,7 +26,7 @@
    deno install --global --force --allow-all \
      -n evals \
      https://raw.githubusercontent.com/darinkishore/mcp-evals-cli/v0.2.5/main.ts
-````
+   ```
 
 Replace `v0.2.5` with the latest release tag.
 *Upgrading from v0.1.x?* Re-run the install command once to enable in-place upgrades.
