@@ -1,5 +1,7 @@
+/** @jsxImportSource npm:react@19.1.1 */
+// deno-lint-ignore-file no-unused-vars
+import React, { type ReactNode } from "npm:react@19.1.1";
 import { Box, Text } from "npm:ink@6.3.0";
-import type { ReactNode } from "npm:react@19.1.1";
 import TextInput from "npm:ink-text-input@6.0.0";
 
 type Mode = "idle" | "ask" | "feedback";

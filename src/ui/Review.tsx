@@ -1,3 +1,6 @@
+/** @jsxImportSource npm:react@19.1.1 */
+// deno-lint-ignore-file no-unused-vars
+import React from "npm:react@19.1.1";
 import { useEffect, useMemo, useState } from "npm:react@19.1.1";
 import { Box, Text, useApp, useInput } from "npm:ink@6.3.0";
 import type { TraceBrowseItem } from "../types.ts";

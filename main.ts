@@ -29,7 +29,7 @@ import {
 } from "./src/config.ts";
 import type { WorkspaceSummary } from "./src/types.ts";
 
-const VERSION = "v0.2.1";
+const VERSION = "v0.2.2";
 
 async function runReview(opts?: { failuresOnly?: boolean }) {
   // Ensure consistent dev/prod selection for React/Reconciler

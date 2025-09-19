@@ -1,7 +1,8 @@
+/** @jsxImportSource npm:react@19.1.1 */
+// deno-lint-ignore-file no-unused-vars
+import React, { type ReactNode, useEffect } from "npm:react@19.1.1";
 import { Box, Text } from "npm:ink@6.3.0";
 import type { ReviewIssue, ReviewRequirement } from "../types.ts";
-import type { ReactNode } from "npm:react@19.1.1";
-import { useEffect } from "npm:react@19.1.1";
 
 interface BottomDetailsPaneProps {
   issues: ReviewIssue[];
