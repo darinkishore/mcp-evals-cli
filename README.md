@@ -23,8 +23,8 @@ Install
 1. Ensure Deno v2+ is installed.
 2. Public (stable) install from tag: deno install --global --force --allow-all\
    -n evals\
-   https://raw.githubusercontent.com/darinkishore/mcp-evals-cli/v0.2.3/main.ts
-   # Replace v0.2.3 with the latest release tag
+   https://raw.githubusercontent.com/darinkishore/mcp-evals-cli/v0.2.5/main.ts
+   # Replace v0.2.5 with the latest release tag
    # Upgrading from v0.1.x? Re-run the install command once to enable in-place upgrades.
 3. Monorepo (dev) install from this repo: deno install -g -A --config\
    cli/deno/deno.jsonc -n evals cli/deno/main.ts
@@ -52,10 +52,10 @@ Shell Completions
 
 Upgrade
 
-- After the first tagged release (e.g., v0.2.3):
+- After the first tagged release (e.g., v0.2.5):
   - Latest: evals upgrade
   - List versions: evals upgrade -l
-  - Specific: evals upgrade --version v0.2.3 Note: evals upgrade requires at
+  - Specific: evals upgrade --version v0.2.5 Note: evals upgrade requires at
     least one Git tag in the public repo.
 
 Permissions
