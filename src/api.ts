@@ -187,7 +187,7 @@ export function postAsk(
 
 export function listWorkspaces(): Promise<WorkspaceSummary[]> {
   return authed<WorkspaceSummary[]>(
-    `/api/v0/workspaces`,
+    `/api/v0/workspaces/`,
     undefined,
     { requireWorkspace: false },
   );
