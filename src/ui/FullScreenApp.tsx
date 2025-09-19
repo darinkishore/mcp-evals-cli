@@ -1,9 +1,9 @@
-/** @jsxImportSource react */
+/** @jsxImportSource npm:react@19.1.1 */
 // deno-lint-ignore-file no-unused-vars
-import React from "react";
+import React from "npm:react@19.1.1";
 import process from "node:process";
-import { useEffect, useState } from "react";
-import { Box } from "ink";
+import { useEffect, useState } from "npm:react@19.1.1";
+import { Box } from "npm:ink@6.3.0";
 import ReviewApp from "./Review.tsx";
 
 interface FullScreenAppProps {
